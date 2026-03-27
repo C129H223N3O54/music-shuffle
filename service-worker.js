@@ -3,7 +3,7 @@
    PWA Service Worker für Offline-Support und Caching
    ═══════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'music-shuffle-v1.0.0';
+const CACHE_NAME = 'music-shuffle-v1.0.1';
 const STATIC_ASSETS = [
   '/music-shuffle/',
   '/music-shuffle/index.html',

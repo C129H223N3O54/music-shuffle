@@ -2,12 +2,24 @@
 
 All notable changes to Music Shuffle will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.1/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [1.0.0] — 2026-03-26 — Initial Release
+## [1.0.1] — 2026-03-27 — Bugfix Release
+
+### Added
+- Filter toggle buttons for year range — filters are now off by default, click to activate
+- Track tooltips — hover over truncated song/artist/album names to see full text
+
+### Fixed
+- Artist cards no longer shrink with many artists — fixed size with scrollbar
+- Year filters were always active even when empty
+
+---
+
+## [1.0.1] — 2026-03-26 — Initial Release
 
 ### Added
 - **Full discography shuffle** — random tracks from entire album catalog, not just top 10

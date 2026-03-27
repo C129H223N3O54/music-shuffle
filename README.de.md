@@ -2,7 +2,7 @@
 
 > Shuffle durch deine liebsten Spotify-Artists und Genres — kein Algorithmus, nur deine Auswahl.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Vanilla JS](https://img.shields.io/badge/Gebaut%20mit-Vanilla%20JS-yellow)
 ![Spotify API](https://img.shields.io/badge/Spotify-Web%20API%20%2B%20SDK-1DB954)

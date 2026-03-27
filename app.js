@@ -6,7 +6,7 @@
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 
 // ── GLOBAL STATE ──────────────────────────────────────────────────────────────
 const State = {
@@ -997,8 +997,32 @@ function updateFiltersUI() {
   const f = list?.filters || defaultFilters();
 
   document.getElementById('filter-no-live').checked = !!f.noLive;
-  document.getElementById('filter-year-from').value = f.yearFrom || '';
-  document.getElementById('filter-year-to').value = f.yearTo || '';
+
+  // Year from toggle
+  const fromInput = document.getElementById('filter-year-from');
+  const fromBtn = document.getElementById('filter-year-from-toggle');
+  if (f.yearFrom) {
+    fromInput.value = f.yearFrom;
+    fromInput.classList.remove('hidden');
+    fromBtn.classList.add('active');
+  } else {
+    fromInput.value = '';
+    fromInput.classList.add('hidden');
+    fromBtn.classList.remove('active');
+  }
+
+  // Year to toggle
+  const toInput = document.getElementById('filter-year-to');
+  const toBtn = document.getElementById('filter-year-to-toggle');
+  if (f.yearTo) {
+    toInput.value = f.yearTo;
+    toInput.classList.remove('hidden');
+    toBtn.classList.add('active');
+  } else {
+    toInput.value = '';
+    toInput.classList.add('hidden');
+    toBtn.classList.remove('active');
+  }
 
   updateFiltersBadge(f);
 }
@@ -2122,8 +2146,24 @@ function bindAllEvents() {
   setupGenreSearch();
 
   // Filters
-  ['filter-no-live', 'filter-year-from', 'filter-year-to'].forEach(id => {
-    document.getElementById(id).addEventListener('change', saveFilters);
+  document.getElementById('filter-no-live').addEventListener('change', saveFilters);
+  document.getElementById('filter-year-from').addEventListener('change', saveFilters);
+  document.getElementById('filter-year-to').addEventListener('change', saveFilters);
+
+  // Year filter toggle buttons
+  ['from', 'to'].forEach(dir => {
+    const btn = document.getElementById(`filter-year-${dir}-toggle`);
+    const input = document.getElementById(`filter-year-${dir}`);
+    btn.addEventListener('click', () => {
+      const active = btn.classList.toggle('active');
+      input.classList.toggle('hidden', !active);
+      if (!active) {
+        input.value = '';
+        saveFilters();
+      } else {
+        input.focus();
+      }
+    });
   });
   // Energy filter removed (API restricted)
 
@@ -2308,6 +2348,31 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.0.1',
+    date: '2026-03-27',
+    label: { de: 'Bugfix Release', en: 'Bugfix Release' },
+    added: {
+      de: [
+        'Filter-Toggle-Buttons für Jahresrange — Filter sind standardmäßig aus, Klick zum Aktivieren',
+        'Track-Tooltips — Hover über abgeschnittene Namen zeigt vollständigen Text',
+      ],
+      en: [
+        'Filter toggle buttons for year range — filters off by default, click to activate',
+        'Track tooltips — hover over truncated names to see full text',
+      ],
+    },
+    fixed: {
+      de: [
+        'Artist-Cards schrumpfen nicht mehr bei vielen Artists — feste Größe mit Scrollbar',
+        'Jahres-Filter waren immer aktiv auch wenn leer',
+      ],
+      en: [
+        'Artist cards no longer shrink with many artists — fixed size with scrollbar',
+        'Year filters were always active even when empty',
+      ],
+    },
+  },
   {
     version: '1.0.0',
     date: '2026-03-26',
