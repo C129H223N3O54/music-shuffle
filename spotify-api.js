@@ -583,6 +583,37 @@ const SpotifyAPI = (() => {
     return null;
   }
 
+  // ── ALBUM BROWSING ────────────────────────────────────
+  async function getArtistAlbumsFull(artistId) {
+    return _getCachedAlbums(artistId);
+  }
+
+  async function getRandomTrackFromAlbum(albumId, albumData, blacklist = new Set(), history = new Set(), onlyNew = false) {
+    const data = await _fetch(`/albums/${albumId}/tracks?limit=50&market=from_token`).catch(() => null);
+    let tracks = data?.items || [];
+    if (!tracks.length) return null;
+
+    const albumArt = albumData.images?.[0]?.url || '';
+    tracks = tracks.map(t => ({
+      ...t,
+      albumArt,
+      album: {
+        name: albumData.name,
+        release_date: albumData.release_date,
+        album_type: albumData.album_type,
+        images: albumData.images,
+      },
+    }));
+
+    tracks = tracks.filter(t => !blacklist.has(t.id));
+    if (onlyNew) {
+      const fresh = tracks.filter(t => !history.has(t.id));
+      if (fresh.length) tracks = fresh;
+    }
+    if (!tracks.length) return null;
+    return tracks[Math.floor(Math.random() * tracks.length)];
+  }
+
   // ── MARKET DETECTION ──────────────────────────────────
   async function getUserMarket() {
     try {
@@ -611,6 +642,8 @@ const SpotifyAPI = (() => {
     transferPlayback,
     setRepeat,
     getRandomTrack,
+    getArtistAlbumsFull,
+    getRandomTrackFromAlbum,
     getRandomTrackByGenre,
     getAvailableGenres,
   };

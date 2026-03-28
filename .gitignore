@@ -1,0 +1,29 @@
+# Your personal config — contains Client ID
+config.js
+
+# Sync server data directory
+sync-server/data/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Node (if used locally for tooling)
+node_modules/
+npm-debug.log*
+
+# Build output
+dist/
+build/

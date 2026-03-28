@@ -6,7 +6,7 @@
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.1.0';
 
 // ── GLOBAL STATE ──────────────────────────────────────────────────────────────
 const State = {
@@ -79,9 +79,10 @@ const LS = {
     State.activeListId = localStorage.getItem('as_active_list') || null;
     State.blacklistEnabled = localStorage.getItem('as_blacklist_enabled') !== 'false';
 
-    // Migration: ensure all lists have filters
+    // Migration: ensure all lists have filters and albums
     State.lists.forEach(l => {
       if (!l.filters) l.filters = defaultFilters();
+      if (!l.albums) l.albums = [];
     });
   },
 };
@@ -278,6 +279,7 @@ async function bootApp() {
 
   renderLists();
   renderArtistGrid();
+  renderAlbumGrid();
   renderGenreTags();
   renderBlacklist();
   renderStats();
@@ -400,6 +402,7 @@ function onPlayerStateChanged(state) {
   State.duration = state.duration;
 
   updatePlayPauseUI();
+  updateMiniPlayerPlayPause();
   updateProgressUI();
   if ('mediaSession' in navigator) navigator.mediaSession.playbackState = State.isPlaying ? 'playing' : 'paused';
 
@@ -415,6 +418,7 @@ function onPlayerStateChanged(state) {
       duration: state.duration,
     };
     renderNowPlaying(State.currentTrack);
+    updateMiniPlayer(State.currentTrack);
     checkAndAddToHistory(State.currentTrack);
     showTrackNotification(State.currentTrack);
     updateMediaSession(State.currentTrack);
@@ -503,6 +507,13 @@ async function loadDevices() {
       opt.textContent = I18N.t('player_device_not_found');
       select.appendChild(opt);
     }
+
+    // Sync mobile device select
+    const mobileSelect = document.getElementById('mobile-device-select');
+    if (mobileSelect) {
+      mobileSelect.innerHTML = select.innerHTML;
+      mobileSelect.value = select.value;
+    }
   } catch (err) {
     console.warn('[Devices] error:', err.message);
   }
@@ -519,28 +530,28 @@ function getActiveList() {
 }
 
 function renderLists() {
+  // Update hidden select for compatibility
   const select = document.getElementById('list-select');
   select.innerHTML = '';
-
-  if (!State.lists.length) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = I18N.t('list_none');
-    select.appendChild(opt);
-  }
-
   State.lists.forEach(list => {
     const opt = document.createElement('option');
     opt.value = list.id;
-    opt.textContent = list.name + (list.artists?.length ? ` (${list.artists.length})` : '');
+    opt.textContent = list.name;
     select.appendChild(opt);
   });
-
-  if (State.activeListId && State.lists.find(l => l.id === State.activeListId)) {
-    select.value = State.activeListId;
-  } else if (State.lists.length) {
+  if (State.activeListId) select.value = State.activeListId;
+  else if (State.lists.length) {
     State.activeListId = State.lists[0].id;
     select.value = State.activeListId;
+  }
+
+  // Update visible name display
+  const active = getActiveList();
+  const nameText = document.getElementById('list-name-text');
+  if (nameText) {
+    nameText.textContent = active
+      ? `${active.name} (${active.artists?.length || 0})`
+      : I18N.t('list_none');
   }
 }
 
@@ -549,6 +560,7 @@ function createList(name) {
     id: 'list_' + Date.now(),
     name: name.trim() || 'Neue Liste',
     artists: [],
+    albums: [],
     filters: defaultFilters(),
   };
   State.lists.push(list);
@@ -795,6 +807,65 @@ function removeGenreFromList(genre) {
   list.genres = list.genres.filter(g => g !== genre);
   LS.save();
   renderGenreTags();
+}
+
+function setupAlbumArtistSearch() {
+  const input = document.getElementById('album-artist-search');
+  const results = document.getElementById('album-artist-results');
+  const clearBtn = document.getElementById('clear-album-search');
+  if (!input) return;
+
+  let _timer = null;
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    clearBtn.classList.toggle('hidden', !q);
+    clearTimeout(_timer);
+    if (!q) { results.classList.add('hidden'); return; }
+    results.classList.remove('hidden');
+    results.innerHTML = `<div class="search-result-loading">${I18N.t('search_loading')}</div>`;
+    _timer = setTimeout(async () => {
+      try {
+        const artists = await SpotifyAPI.searchArtists(q, 6);
+        results.innerHTML = '';
+        if (!artists.length) {
+          results.innerHTML = `<div class="search-result-empty">${I18N.t('search_empty')}</div>`;
+          return;
+        }
+        artists.forEach(artist => {
+          const item = document.createElement('div');
+          item.className = 'search-result-item';
+          const img = artist.images?.slice(-1)[0]?.url || '';
+          item.innerHTML = `
+            <img src="${img}" alt="" onerror="this.style.background='#282828'" />
+            <div class="search-result-name">${escHtml(artist.name)}</div>
+          `;
+          item.addEventListener('click', () => {
+            input.value = '';
+            clearBtn.classList.add('hidden');
+            results.classList.add('hidden');
+            showAlbumBrowser(artist.id, artist.name);
+          });
+          results.appendChild(item);
+        });
+      } catch (err) {
+        results.innerHTML = `<div class="search-result-empty">Fehler: ${escHtml(err.message)}</div>`;
+      }
+    }, 400);
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.classList.add('hidden');
+    results.classList.add('hidden');
+    input.focus();
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#album-search-section')) {
+      results.classList.add('hidden');
+    }
+  });
 }
 
 function setupGenreSearch() {
@@ -1051,6 +1122,135 @@ function updateFiltersBadge(f) {
   badge.classList.toggle('hidden', count === 0);
 }
 
+// ── ALBUM BROWSER ─────────────────────────────────────────────────────────────
+let _albumBrowserArtistId = null;
+let _albumBrowserSelected = new Set();
+
+async function showAlbumBrowser(artistId, artistName) {
+  _albumBrowserArtistId = artistId;
+  _albumBrowserSelected = new Set();
+
+  document.getElementById('album-browser-title').textContent = artistName;
+  document.getElementById('album-browser-sub').textContent = 'Wähle Alben aus';
+  const grid = document.getElementById('album-browser-grid');
+  grid.innerHTML = '<p style="color:var(--text3);text-align:center;padding:20px">Lade Diskografie…</p>';
+  document.getElementById('modal-album-browser').classList.remove('hidden');
+
+  try {
+    const albums = await SpotifyAPI.getArtistAlbumsFull(artistId);
+    const list = getActiveList();
+    const existingIds = new Set((list.albums || []).map(a => a.id));
+
+    grid.innerHTML = '';
+    albums.forEach(album => {
+      const card = document.createElement('div');
+      card.className = 'album-browser-card' + (existingIds.has(album.id) ? ' added' : '');
+      card.dataset.albumId = album.id;
+      const img = album.images?.[0]?.url || '';
+      const year = album.release_date?.slice(0, 4) || '';
+      card.innerHTML = `
+        <div class="album-browser-check ${existingIds.has(album.id) ? 'checked' : ''}">✓</div>
+        <img src="${img}" alt="${escHtml(album.name)}" onerror="this.style.background='#282828'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px"/>
+        <div style="font-size:0.72rem;font-weight:600;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(album.name)}">${escHtml(album.name)}</div>
+        <div style="font-size:0.65rem;color:var(--text3)">${year}</div>
+      `;
+      if (!existingIds.has(album.id)) {
+        card.addEventListener('click', () => {
+          if (_albumBrowserSelected.has(album.id)) {
+            _albumBrowserSelected.delete(album.id);
+            card.classList.remove('selected');
+            card.querySelector('.album-browser-check').classList.remove('checked');
+          } else {
+            _albumBrowserSelected.add(album.id);
+            card.classList.add('selected');
+            card.querySelector('.album-browser-check').classList.add('checked');
+            // Store album data
+            card.dataset.albumData = JSON.stringify({
+              id: album.id,
+              name: album.name,
+              artistId: artistId,
+              artistName: artistName,
+              images: album.images,
+              release_date: album.release_date,
+              album_type: album.album_type,
+            });
+          }
+          const btn = document.getElementById('confirm-album-browser');
+          btn.textContent = _albumBrowserSelected.size > 0
+            ? `${_albumBrowserSelected.size} Album${_albumBrowserSelected.size > 1 ? 's' : ''} hinzufügen`
+            : 'Hinzufügen';
+          btn.disabled = _albumBrowserSelected.size === 0;
+        });
+      }
+      grid.appendChild(card);
+    });
+
+    document.getElementById('confirm-album-browser').disabled = true;
+    document.getElementById('confirm-album-browser').textContent = 'Hinzufügen';
+  } catch (err) {
+    grid.innerHTML = `<p style="color:var(--danger);padding:20px">Fehler: ${escHtml(err.message)}</p>`;
+  }
+}
+
+function addSelectedAlbumsToList() {
+  const list = getActiveList();
+  if (!list) return;
+  if (!list.albums) list.albums = [];
+
+  const grid = document.getElementById('album-browser-grid');
+  let added = 0;
+  _albumBrowserSelected.forEach(albumId => {
+    const card = grid.querySelector(`[data-album-id="${albumId}"]`);
+    if (card?.dataset.albumData) {
+      const albumData = JSON.parse(card.dataset.albumData);
+      if (!list.albums.find(a => a.id === albumId)) {
+        list.albums.push(albumData);
+        added++;
+      }
+    }
+  });
+
+  LS.save();
+  renderAlbumGrid();
+  document.getElementById('modal-album-browser').classList.add('hidden');
+  showToast(`${added} Album${added !== 1 ? 's' : ''} hinzugefügt`, 'success');
+}
+
+function renderAlbumGrid() {
+  const list = getActiveList();
+  const albums = list?.albums || [];
+  const section = document.getElementById('album-section');
+  const grid = document.getElementById('album-grid');
+
+  if (!albums.length) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  grid.innerHTML = '';
+
+  const sorted = [...albums].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  sorted.forEach(album => {
+    const card = document.createElement('div');
+    card.className = 'album-card';
+    const img = album.images?.[0]?.url || '';
+    const year = album.release_date?.slice(0, 4) || '';
+    card.innerHTML = `
+      <img src="${img}" alt="${escHtml(album.name)}" onerror="this.style.background='#282828'" class="album-card-img"/>
+      <div class="album-card-name" title="${escHtml(album.name)}">${escHtml(album.name)}</div>
+      <div class="album-card-artist" title="${escHtml(album.artistName)}">${escHtml(album.artistName)} · ${year}</div>
+      <button class="album-card-remove" data-id="${album.id}" title="Entfernen">✕</button>
+    `;
+    card.querySelector('.album-card-remove').addEventListener('click', e => {
+      e.stopPropagation();
+      list.albums = list.albums.filter(a => a.id !== album.id);
+      LS.save();
+      renderAlbumGrid();
+    });
+    grid.appendChild(card);
+  });
+}
+
 // ── SMART SHUFFLE ─────────────────────────────────────────────────────────────
 function pickSmartArtist(artists) {
   if (!artists?.length) return null;
@@ -1107,17 +1307,32 @@ async function doShuffle() {
   const filters = list.filters || defaultFilters();
   const hasArtists = list.artists?.length > 0;
   const hasGenres = list.genres?.length > 0;
+  const hasAlbums = list.albums?.length > 0;
 
-  // Pick randomly between artist and genre if both available
-  const useGenre = hasGenres && (!hasArtists || Math.random() < 0.3);
+  // Pick randomly between artist, album and genre
+  const rand = Math.random();
+  const totalSources = (hasArtists ? 1 : 0) + (hasAlbums ? 1 : 0) + (hasGenres ? 0.3 : 0);
+  const useGenre = hasGenres && rand < 0.3 / totalSources;
+  const useAlbum = !useGenre && hasAlbums && (!hasArtists || rand < (hasAlbums ? 0.5 : 0));
 
   try {
     let track = null;
 
     if (useGenre) {
-      // Pick random genre from list
       const genre = list.genres[Math.floor(Math.random() * list.genres.length)];
       track = await SpotifyAPI.getRandomTrackByGenre(genre, filters, blacklistSet);
+    } else if (useAlbum) {
+      const album = list.albums[Math.floor(Math.random() * list.albums.length)];
+      track = await SpotifyAPI.getRandomTrackFromAlbum(album.id, album, blacklistSet, State.historyIds, State.onlyNew);
+      if (track) {
+        State.shuffleLog.unshift({
+          trackName: track.name,
+          artistName: album.artistName,
+          reason: '💿 Album',
+          ts: Date.now(),
+        });
+        if (State.shuffleLog.length > 20) State.shuffleLog.pop();
+      }
     } else if (hasArtists) {
       const artist = pickSmartArtist(list.artists);
       track = await SpotifyAPI.getRandomTrack(
@@ -1314,6 +1529,27 @@ function updateMediaSession(track) {
   });
 
   navigator.mediaSession.playbackState = State.isPlaying ? 'playing' : 'paused';
+}
+
+// ── MINI PLAYER ───────────────────────────────────────────────────────────────
+function updateMiniPlayer(track) {
+  if (!track) return;
+  const mini = document.getElementById('mini-player');
+  if (mini) mini.classList.remove('hidden');
+  const art = document.getElementById('mini-art');
+  const trackEl = document.getElementById('mini-track');
+  const artistEl = document.getElementById('mini-artist');
+  if (art) art.src = track.albumArt || '';
+  if (trackEl) trackEl.textContent = track.name;
+  if (artistEl) artistEl.textContent = track.artist;
+}
+
+function updateMiniPlayerPlayPause() {
+  const playIcon = document.getElementById('mini-play-icon');
+  const pauseIcon = document.getElementById('mini-pause-icon');
+  if (!playIcon || !pauseIcon) return;
+  playIcon.classList.toggle('hidden', State.isPlaying);
+  pauseIcon.classList.toggle('hidden', !State.isPlaying);
 }
 
 // ── DESKTOP NOTIFICATIONS ─────────────────────────────────────────────────────
@@ -1682,14 +1918,43 @@ function renderStats() {
 
   // Top songs
   const songCounts = {};
+  const songArtists = {};
   plays.forEach(p => {
     if (!p.trackName) return;
     songCounts[p.trackName] = (songCounts[p.trackName] || 0) + 1;
+    if (p.artistName) songArtists[p.trackName] = p.artistName;
   });
-  renderStatsBars('stats-top-songs', songCounts, 5);
+  const expandBtn = document.getElementById('stats-songs-expand');
+  const expanded = expandBtn?.dataset.expanded === '1';
+  renderStatsBarsWithArtist('stats-top-songs', songCounts, songArtists, expanded ? 999 : 5);
+  if (expandBtn) {
+    expandBtn.textContent = expanded
+      ? (I18N.getLang() === 'de' ? 'Weniger' : 'Show less')
+      : (I18N.getLang() === 'de' ? 'Alle anzeigen' : 'Show all');
+  }
 
   // Sessions per week
   renderSessionsChart(plays);
+}
+
+function renderStatsBarsWithArtist(containerId, counts, artists, limit) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit);
+  const max = sorted[0]?.[1] || 1;
+
+  container.innerHTML = sorted.map(([name, count]) => `
+    <div class="stat-bar-item">
+      <div class="stat-bar-label">
+        <span title="${escHtml(name)}">${escHtml(name)}${artists[name] ? `<span style="color:var(--text3);font-weight:400"> · ${escHtml(artists[name])}</span>` : ''}</span>
+        <span style="flex-shrink:0">${count}×</span>
+      </div>
+      <div class="stat-bar-track">
+        <div class="stat-bar-fill" style="width:${(count/max*100).toFixed(1)}%"></div>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderStatsBars(containerId, counts, limit) {
@@ -1942,10 +2207,43 @@ function bindAllEvents() {
     backdrop.classList.remove('visible');
   });
 
-  // List selector
+  // List name display — opens picker sheet
+  document.getElementById('list-name-display')?.addEventListener('click', () => {
+    const sheet = document.getElementById('sheet-list-picker');
+    const items = document.getElementById('sheet-list-items');
+    items.innerHTML = '';
+    State.lists.forEach(list => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-menu-item' + (list.id === State.activeListId ? ' active' : '');
+      btn.textContent = list.name + (list.artists?.length ? ` (${list.artists.length})` : '');
+      btn.style.fontWeight = list.id === State.activeListId ? '700' : '400';
+      btn.addEventListener('click', () => {
+        State.activeListId = list.id;
+        document.getElementById('list-select').value = list.id;
+        localStorage.setItem('as_active_list', list.id);
+        sheet.classList.add('hidden');
+        renderLists();
+        renderArtistGrid();
+        renderGenreTags();
+        updateFiltersUI();
+      });
+      items.appendChild(btn);
+    });
+    sheet.classList.remove('hidden');
+  });
+
+  // Close list picker on overlay tap
+  document.getElementById('sheet-list-picker')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('sheet-list-picker')) {
+      document.getElementById('sheet-list-picker').classList.add('hidden');
+    }
+  });
+
+  // List selector (hidden, kept for compatibility)
   document.getElementById('list-select').addEventListener('change', e => {
     State.activeListId = e.target.value;
     renderArtistGrid();
+    renderAlbumGrid();
     updateFiltersUI();
     localStorage.setItem('as_active_list', State.activeListId);
   });
@@ -1967,27 +2265,49 @@ function bindAllEvents() {
     if (e.key === 'Enter') document.getElementById('confirm-new-list').click();
     if (e.key === 'Escape') document.getElementById('cancel-new-list').click();
   });
-  document.getElementById('modal-new-list').addEventListener('click', e => {
-    if (e.target === e.currentTarget) document.getElementById('cancel-new-list').click();
-  });
+  // New list modal — no click-outside on iOS
 
   // List options dropdown
-  const optBtn = document.getElementById('list-options-btn');
-  const optMenu = document.getElementById('list-options-menu');
-  optBtn.addEventListener('click', e => {
+  // List options — modal (works on iOS)
+  const listOptionsSheet = document.getElementById('modal-list-options');
+
+  function openListOptions() {
+    listOptionsSheet.classList.remove('hidden');
+  }
+  function closeListOptions() {
+    listOptionsSheet.classList.add('hidden');
+  }
+
+  // Open
+  document.getElementById('list-options-btn').addEventListener('click', e => {
     e.stopPropagation();
     e.preventDefault();
-    const isHidden = optMenu.classList.contains('hidden');
-    optMenu.classList.toggle('hidden', !isHidden);
+    openListOptions();
   });
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#list-options-menu') && !e.target.closest('#list-options-btn')) {
-      optMenu.classList.add('hidden');
-    }
+
+  // Close button
+  document.getElementById('close-list-options')?.addEventListener('click', closeListOptions);
+  document.getElementById('close-list-options')?.addEventListener('touchend', e => {
+    e.preventDefault();
+    closeListOptions();
+  });
+
+  // Close on overlay
+  listOptionsSheet?.addEventListener('touchend', e => {
+    if (e.target === listOptionsSheet) closeListOptions();
+  });
+
+  // Make all sheet buttons work with touchend on iOS
+  listOptionsSheet?.querySelectorAll('.btn-menu-item').forEach(btn => {
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      btn.click();
+    });
   });
 
   // Rename list
   document.getElementById('rename-list-btn').addEventListener('click', () => {
+    document.getElementById('modal-list-options').classList.add('hidden');
     const list = getActiveList();
     if (!list) return;
     document.getElementById('rename-list-input').value = list.name;
@@ -2008,6 +2328,7 @@ function bindAllEvents() {
 
   // Delete list
   document.getElementById('delete-list-btn').addEventListener('click', () => {
+    document.getElementById('modal-list-options').classList.add('hidden');
     document.getElementById('modal-delete-list').classList.remove('hidden');
   });
   document.getElementById('confirm-delete-list').addEventListener('click', () => {
@@ -2017,30 +2338,60 @@ function bindAllEvents() {
   document.getElementById('cancel-delete-list').addEventListener('click', () => {
     document.getElementById('modal-delete-list').classList.add('hidden');
   });
-  [document.getElementById('modal-delete-list'), document.getElementById('modal-rename-list')].forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
-  });
+  // Delete/rename modals — no click-outside on iOS
 
   // Duplicate list
   document.getElementById('duplicate-list-btn')?.addEventListener('click', () => {
+    document.getElementById('modal-list-options').classList.add('hidden');
     duplicateActiveList();
-    document.getElementById('list-options-menu').classList.add('hidden');
   });
 
   // Merge list
   document.getElementById('merge-list-btn')?.addEventListener('click', () => {
-    document.getElementById('list-options-menu').classList.add('hidden');
+    document.getElementById('modal-list-options').classList.add('hidden');
     showMergeModal();
   });
+
+  // Album browser
+  document.getElementById('close-album-browser')?.addEventListener('click', () => {
+    document.getElementById('modal-album-browser').classList.add('hidden');
+  });
+  document.getElementById('confirm-album-browser')?.addEventListener('click', addSelectedAlbumsToList);
+  document.getElementById('modal-album-browser')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+  });
+
+  // Mobile shuffle button
+  document.getElementById('mobile-shuffle-btn')?.addEventListener('click', doShuffle);
+
+  // Mobile device select — sync with main select
+  const mobileDeviceSelect = document.getElementById('mobile-device-select');
+  if (mobileDeviceSelect) {
+    mobileDeviceSelect.addEventListener('change', e => {
+      const deviceId = e.target.value;
+      if (deviceId) {
+        State.activeDeviceId = deviceId;
+        document.getElementById('device-select').value = deviceId;
+        SpotifyAPI.transferPlayback(deviceId, false).catch(() => {});
+        showToast(I18N.t('toast_device_changed'), 'success');
+      }
+    });
+    document.getElementById('mobile-refresh-devices')?.addEventListener('click', loadDevices);
+  }
+
+  // Mini player controls
+  document.getElementById('mini-play-pause')?.addEventListener('click', () => {
+    if (State.isPlaying) State.player?.pause(); else State.player?.resume();
+  });
+  document.getElementById('mini-next')?.addEventListener('click', playNextFromQueue);
+  document.getElementById('mini-shuffle')?.addEventListener('click', doShuffle);
 
   // Changelog button
   document.getElementById('changelog-btn')?.addEventListener('click', showChangelog);
   document.getElementById('close-changelog')?.addEventListener('click', () => {
     document.getElementById('modal-changelog').classList.add('hidden');
   });
-  document.getElementById('modal-changelog')?.addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
-  });
+  // Changelog modal — no click-outside on iOS
 
   // Language toggle
   const langBtn = document.getElementById('lang-btn');
@@ -2104,7 +2455,7 @@ function bindAllEvents() {
       const artistId = card.dataset.artistId;
       const list = getActiveList();
       const artist = list?.artists?.find(a => a.id === artistId);
-      if (artist) showArtistStats(artist.id, artist.name);
+      if (artist) showAlbumBrowser(artist.id, artist.name);
     }
   });
 
@@ -2117,21 +2468,21 @@ function bindAllEvents() {
     if (select.value) mergeListIntoActive(select.value);
     document.getElementById('modal-merge-list').classList.add('hidden');
   });
-  document.getElementById('modal-merge-list')?.addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
-  });
+  // Merge modal — no click-outside on iOS
 
   // Artist stats modal close
   document.getElementById('close-artist-stats')?.addEventListener('click', () => {
     document.getElementById('modal-artist-stats').classList.add('hidden');
   });
-  document.getElementById('modal-artist-stats')?.addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
-  });
+  // Artist stats modal — no click-outside on iOS
 
   // Export / Import
-  document.getElementById('export-lists-btn').addEventListener('click', exportLists);
+  document.getElementById('export-lists-btn').addEventListener('click', () => {
+    document.getElementById('modal-list-options').classList.add('hidden');
+    exportLists();
+  });
   document.getElementById('import-lists-btn').addEventListener('click', () => {
+    document.getElementById('modal-list-options').classList.add('hidden');
     document.getElementById('import-file-input').click();
   });
   document.getElementById('import-file-input').addEventListener('change', e => {
@@ -2142,6 +2493,9 @@ function bindAllEvents() {
 
   // Search
   setupSearch();
+
+  // Album artist search
+  setupAlbumArtistSearch();
 
   // Genres
   setupGenreSearch();
@@ -2218,9 +2572,7 @@ function bindAllEvents() {
   document.getElementById('close-discovery').addEventListener('click', () => {
     document.getElementById('modal-discovery').classList.add('hidden');
   });
-  document.getElementById('modal-discovery').addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
-  });
+  // Discovery modal — no click-outside on iOS
 
   // Progress bar click/drag
   const track = document.getElementById('progress-track');
@@ -2258,6 +2610,13 @@ function bindAllEvents() {
 
   // Stats range
   document.getElementById('stats-range').addEventListener('change', renderStats);
+
+  // Expand songs list
+  document.getElementById('stats-songs-expand')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.dataset.expanded = btn.dataset.expanded === '1' ? '0' : '1';
+    renderStats();
+  });
 
   // Clear history
   document.getElementById('clear-history-btn').addEventListener('click', () => {
@@ -2349,6 +2708,65 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.1.0',
+    date: '2026-03-28',
+    label: { de: 'Mobile & Alben Release', en: 'Mobile & Albums Release' },
+    added: {
+      de: [
+        'Alben-Unterstützung — einzelne Alben zur Liste hinzufügen',
+        'Album-Suche — Artist suchen und Diskografie durchsuchen ohne Artist hinzuzufügen',
+        'Alben-Bereich — eigener Bereich unterhalb der Artists',
+        'Mobile Mini-Player — Play/Pause, Nächster Track und Shuffle auf Mobile',
+        'Mobile Geräte-Auswahl — Spotify Connect Gerät direkt auf Mobile wählen',
+        'Mobile Shuffle-Button — großer Shuffle-Button auf Mobile',
+        'iOS Unterstützung (teilweise) — Listen verwalten und andere Geräte steuern',
+        'Track-Tooltips — Hover über abgeschnittene Namen',
+        'Top Songs erweiterbar — "Alle anzeigen" Button in Statistiken',
+      ],
+      en: [
+        'Album support — add individual albums to lists via discography browser',
+        'Album search — search artist and browse discography without adding artist',
+        'Album section — separate section below artists',
+        'Mobile mini player — play/pause, next and shuffle on mobile',
+        'Mobile device selector — choose Spotify Connect device on mobile',
+        'Mobile shuffle button — large shuffle button visible on mobile',
+        'iOS support (partial) — list management and remote control of other devices',
+        'Track tooltips — hover over truncated names',
+        'Top songs expandable — "Show all" button in statistics',
+      ],
+    },
+    changed: {
+      de: [
+        'Artist-Grid von 3 auf 2 Spalten — größere Bilder',
+        'Artist-Grid alphabetisch sortiert',
+        'Filter-Toggle-Buttons für Jahresrange',
+        'App-Pfad zu /music-shuffle/ geändert',
+        'Album-Cache TTL auf 24 Stunden erhöht',
+      ],
+      en: [
+        'Artist grid from 3 to 2 columns — larger images',
+        'Artist grid sorted alphabetically',
+        'Filter toggle buttons for year range',
+        'App path changed to /music-shuffle/',
+        'Album cache TTL increased to 24 hours',
+      ],
+    },
+    fixed: {
+      de: [
+        'Artist-Cards schrumpfen nicht mehr bei vielen Artists',
+        'iOS Scrolling verbessert',
+        'Bottom Sheet Menü für Listen-Optionen (iOS kompatibel)',
+        'Mobile Layout ohne unsichtbaren Player-Bereich',
+      ],
+      en: [
+        'Artist cards no longer shrink with many artists',
+        'iOS scrolling improved',
+        'Bottom sheet menu for list options (iOS compatible)',
+        'Mobile layout without invisible player blocking taps',
+      ],
+    },
+  },
   {
     version: '1.0.2',
     date: '2026-03-27',

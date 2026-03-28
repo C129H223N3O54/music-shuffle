@@ -47,6 +47,7 @@ const I18N = (() => {
 
       // Search
       search_artist_placeholder: 'Artist suchen und hinzufügen…',
+      search_album_artist_placeholder: 'Artist für Album-Suche…',
       search_genre_placeholder: 'Genre suchen und hinzufügen…',
       search_loading: 'Suche…',
       search_empty: 'Keine Artists gefunden',
@@ -226,6 +227,7 @@ const I18N = (() => {
 
       // Search
       search_artist_placeholder: 'Search and add artists…',
+      search_album_artist_placeholder: 'Search artist for albums…',
       search_genre_placeholder: 'Search and add genres…',
       search_loading: 'Searching…',
       search_empty: 'No artists found',

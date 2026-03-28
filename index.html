@@ -104,25 +104,19 @@
       <!-- ── VIEW: LISTS ── -->
       <div class="sidebar-view active" id="view-lists">
         <div class="list-selector-bar">
-          <select id="list-select" class="list-select"></select>
-          <button id="new-list-btn" class="btn-icon btn-accent" title="Neue Liste">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <div style="position:relative">
-            <button id="list-options-btn" class="btn-icon" title="Optionen">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
-            </button>
-            <div id="list-options-menu" class="dropdown-menu hidden">
-              <button id="rename-list-btn" data-i18n="list_rename">✏️ Umbenennen</button>
-              <button id="duplicate-list-btn" data-i18n="list_duplicate">📋 Duplizieren</button>
-          <button id="merge-list-btn" data-i18n="list_merge">🔀 Liste einmischen</button>
-          <button id="export-lists-btn" data-i18n="list_export">📤 Exportieren</button>
-              <button id="import-lists-btn" data-i18n="list_import">📥 Importieren</button>
-              <hr/>
-              <button id="delete-list-btn" class="danger" data-i18n="list_delete">🗑️ Liste löschen</button>
-            </div>
+          <div id="list-name-display" class="list-name-display">
+            <span id="list-name-text">—</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
+          <button id="new-list-btn" class="btn-icon btn-accent btn-touch" title="Neue Liste">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button id="list-options-btn" class="btn-icon btn-touch" title="Optionen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+          </button>
         </div>
+        <!-- Hidden select for compatibility -->
+        <select id="list-select" class="hidden"></select>
         <input type="file" id="import-file-input" accept=".json" class="hidden" />
 
         <!-- Artist search -->
@@ -135,6 +129,18 @@
             </button>
           </div>
           <div id="search-results" class="search-results hidden"></div>
+        </div>
+
+        <!-- Album search -->
+        <div class="search-section" id="album-search-section">
+          <div class="search-input-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="album-artist-search" placeholder="Artist für Album-Suche…" data-i18n="search_album_artist_placeholder" data-i18n-attr="placeholder" autocomplete="off" />
+            <button id="clear-album-search" class="btn-icon hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div id="album-artist-results" class="search-results hidden"></div>
         </div>
 
         <!-- Genre Tags -->
@@ -164,19 +170,46 @@
               <input type="checkbox" id="filter-no-live" />
               <span data-i18n="filter_no_live">🚫 Keine Live-Alben</span>
             </label>
-            <div class="filter-row range-row">
-              <span data-i18n="filter_year_from">📅 Ab Jahr</span>
-              <input type="number" id="filter-year-from" placeholder="1990" data-i18n="filter_year_from_placeholder" data-i18n-attr="placeholder" min="1950" max="2030" class="filter-number" />
+            <div class="filter-row">
+              <button id="filter-year-from-toggle" class="btn-filter-toggle" data-i18n="filter_year_from">📅 Ab Jahr</button>
+              <input type="number" id="filter-year-from" placeholder="1990" data-i18n="filter_year_from_placeholder" data-i18n-attr="placeholder" min="1950" max="2030" class="filter-number hidden" />
             </div>
-            <div class="filter-row range-row">
-              <span data-i18n="filter_year_to">📅 Bis Jahr</span>
-              <input type="number" id="filter-year-to" placeholder="2025" data-i18n="filter_year_to_placeholder" data-i18n-attr="placeholder" min="1950" max="2030" class="filter-number" />
+            <div class="filter-row">
+              <button id="filter-year-to-toggle" class="btn-filter-toggle" data-i18n="filter_year_to">📅 Bis Jahr</button>
+              <input type="number" id="filter-year-to" placeholder="2025" data-i18n="filter_year_to_placeholder" data-i18n-attr="placeholder" min="1950" max="2030" class="filter-number hidden" />
             </div>
           </div>
         </details>
 
+        <!-- Mobile Device + Shuffle Bar -->
+        <div class="mobile-shuffle-bar">
+          <div class="mobile-device-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+            <select id="mobile-device-select" class="mobile-device-select">
+              <option value="">— Gerät wählen —</option>
+            </select>
+            <button id="mobile-refresh-devices" class="btn-icon" style="padding:0;width:20px;height:20px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            </button>
+          </div>
+        <div class="mobile-shuffle-bar" style="padding-top:0">
+          <button id="mobile-shuffle-btn" class="btn-shuffle-big" style="width:100%">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+            <span data-i18n="player_shuffle">SHUFFLE</span>
+          </button>
+        </div>
+        </div>
+
         <!-- Artists grid -->
         <div id="artist-grid" class="artist-grid"></div>
+        <!-- Albums section -->
+        <div id="album-section" class="hidden">
+          <div class="section-divider">
+            <span>🎵 Alben</span>
+          </div>
+          <div id="album-grid" class="album-grid"></div>
+        </div>
+
         <div id="list-empty" class="list-empty hidden">
           <svg viewBox="0 0 64 64" fill="none" width="48" height="48"><circle cx="32" cy="32" r="30" stroke="#333" stroke-width="2"/><path d="M20 36c4-6 8-8 12-8s8 2 12 8" stroke="#444" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="2" fill="#444"/><circle cx="40" cy="26" r="2" fill="#444"/></svg>
           <p>Keine Artists in dieser Liste</p>
@@ -233,7 +266,10 @@
             <div id="stats-top-artists" class="stats-bars"></div>
           </div>
           <div class="stat-section">
-            <h4>🎵 Top Songs</h4>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <h4 style="margin:0">🎵 Top Songs</h4>
+              <button id="stats-songs-expand" class="btn-small" style="font-size:0.7rem">Alle anzeigen</button>
+            </div>
             <div id="stats-top-songs" class="stats-bars"></div>
           </div>
           <div class="stat-section">
@@ -467,14 +503,50 @@
     </div>
   </div>
 
+  <!-- List Picker Bottom Sheet -->
+  <div id="sheet-list-picker" class="bottom-sheet-overlay hidden">
+    <div class="bottom-sheet">
+      <div class="bottom-sheet-handle"></div>
+      <div id="sheet-list-items" style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Album Browser Modal -->
+  <div id="modal-album-browser" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <h3 id="album-browser-title">Diskografie</h3>
+      <p class="modal-sub" id="album-browser-sub">Wähle Alben aus um sie zur Liste hinzuzufügen</p>
+      <div id="album-browser-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:60vh;overflow-y:auto;margin:16px 0"></div>
+      <div class="modal-btns">
+        <button class="btn-secondary" id="close-album-browser">Schließen</button>
+        <button class="btn-primary" id="confirm-album-browser">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- List Options Bottom Sheet -->
+  <div id="modal-list-options" class="bottom-sheet-overlay hidden">
+    <div class="bottom-sheet">
+      <div class="bottom-sheet-handle"></div>
+      <button id="rename-list-btn" class="btn-menu-item" data-i18n="list_rename">✏️ Umbenennen</button>
+      <button id="duplicate-list-btn" class="btn-menu-item" data-i18n="list_duplicate">📋 Duplizieren</button>
+      <button id="merge-list-btn" class="btn-menu-item" data-i18n="list_merge">🔀 Liste einmischen</button>
+      <button id="export-lists-btn" class="btn-menu-item" data-i18n="list_export">📤 Exportieren</button>
+      <button id="import-lists-btn" class="btn-menu-item" data-i18n="list_import">📥 Importieren</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+      <button id="delete-list-btn" class="btn-menu-item danger-text" data-i18n="list_delete">🗑️ Liste löschen</button>
+      <button id="close-list-options" class="btn-menu-item" style="color:var(--text3);margin-top:4px" data-i18n="btn_cancel">Abbrechen</button>
+    </div>
+  </div>
+
   <!-- Changelog Modal -->
   <div id="modal-changelog" class="modal-overlay hidden">
-    <div class="modal" style="max-width:520px;max-height:80vh;overflow-y:auto">
-      <h3>📋 Changelog</h3>
-      <div id="changelog-content" style="margin-top:16px"></div>
-      <div class="modal-btns" style="margin-top:20px">
-        <button class="btn-secondary" id="close-changelog">Schließen</button>
+    <div class="modal" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:12px">
+        <h3 style="margin:0">📋 Changelog</h3>
+        <button class="btn-secondary" id="close-changelog">✕ Schließen</button>
       </div>
+      <div id="changelog-content" style="overflow-y:auto;flex:1"></div>
     </div>
   </div>
 

@@ -2,12 +2,43 @@
 
 All notable changes to Music Shuffle will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.2/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [1.0.2] — 2026-03-27 — Bugfix Release
+## [1.1.0] — 2026-03-28 — Mobile & Albums Release
+
+### Added
+- **Album support** — add individual albums to lists via artist discography browser
+- **Album search** — search for an artist and browse their discography without adding the artist
+- **Album section** — albums shown in a separate section below artists, sorted alphabetically
+- **Mobile mini player** — play/pause, next track and shuffle button at bottom of sidebar on mobile
+- **Mobile device selector** — choose Spotify Connect device directly on mobile
+- **Mobile shuffle button** — large shuffle button visible on mobile without needing the player view
+- **iOS support (partial)** — app fully usable on iPhone for list management and remote control of other devices (Sonos, PC, etc.)
+- **Sync timeout** — sync server requests timeout after 3 seconds, app works without VPN/NAS access
+- **Track tooltips** — hover over truncated song/artist/album names to see full text
+- **Top songs expandable** — "Show all" button in stats to see complete song history
+
+### Changed
+- Artist grid switched from 3 to 2 columns — larger images, more breathing room
+- Artist grid sorted alphabetically
+- Filter toggle buttons for year range — filters off by default, click to activate
+- App path changed from `/spotify-shuffle/` to `/music-shuffle/`
+- Album cache TTL increased to 24 hours
+- API throttle increased to 1 request per second
+- Sync debounce increased to 3 seconds
+
+### Fixed
+- Artist cards no longer shrink with many artists — fixed size with scrollbar
+- iOS scrolling improved with momentum scrolling
+- Bottom sheet menu for list options (iOS compatible)
+- Mobile layout no longer has invisible player blocking taps
+
+---
+
+## [1.1.0] — 2026-03-27 — Bugfix Release
 
 ### Added
 - Artist grid now sorted alphabetically
@@ -17,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.2] — 2026-03-27 — Bugfix Release
+## [1.1.0] — 2026-03-27 — Bugfix Release
 
 ### Added
 - Filter toggle buttons for year range — filters are now off by default, click to activate
@@ -29,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.2] — 2026-03-26 — Initial Release
+## [1.1.0] — 2026-03-26 — Initial Release
 
 ### Added
 - **Full discography shuffle** — random tracks from entire album catalog, not just top 10
