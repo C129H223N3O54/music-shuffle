@@ -1914,7 +1914,6 @@ const CHANGELOG = [
     },
   },
   {
-  {
     version: '1.1.2',
     date: '2026-03-29',
     label: { de: 'Aufräum & Balance Release', en: 'Cleanup & Balance Release' },
