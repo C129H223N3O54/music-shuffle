@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
+
+---
+
 ## [1.1.2] — 2026-03-29 — Cleanup & Balance Release
 
 ### Added
@@ -30,6 +54,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
+
+---
+
 ## [1.1.2] — 2026-03-29 — Bugfix Release
 
 ### Fixed
@@ -42,6 +90,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each artist and album has equal chance of being picked (1 entry each in pool)
 - Artists with more albums naturally provide more variety when selected
 - Smart Shuffle still applies — artists not played recently get higher weight
+
+---
+
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
 
 ---
 
@@ -76,6 +148,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
+
+---
+
 ## [1.1.2] — 2026-03-27 — Bugfix Release
 
 ### Added
@@ -83,6 +179,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Artist grid switched from 3 to 2 columns — larger images, more breathing room
+
+---
+
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
 
 ---
 
@@ -95,6 +215,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Artist cards no longer shrink with many artists — fixed size with scrollbar
 - Year filters were always active even when empty
+
+---
+
+## [1.2.0] — 2026-04-03 — Sync & Filter Release
+
+### Added
+- **Stats sync** — play statistics (plays, shuffle count) are now stored on the sync server and shared across all devices
+- **Server-side album cache** — Spotify album data is cached on the sync server after the first fetch; subsequent app starts load from cache instead of hitting the Spotify API (24h TTL, eliminates cold-start 429 errors)
+- **Instrumental filter** — per-list toggle to hide tracks containing "instrumental", "karaoke", "backing track", "playback", "(inst" or "inst." in the track name
+- **`syncStats` config flag** — set `syncStats: false` in `config.js` to keep play statistics local even when a sync server is configured
+
+### Changed
+- **Spotify 429 handling** — up to 3 retries (was 1) with full `Retry-After` wait between each attempt
+- **Rate limit recovery** — after exhausting retries, app automatically retries shuffle after 35 seconds instead of stopping playback silently
+- **`fillQueue` delay** — increased from 5s to 20s after first track to give server cache time to load on startup
+- **Stats sync debounce** — stats are synced to server 30 seconds after the last play (not per song, not tied to list sync)
+- **Sync server `/api/health`** — response now includes `plays` count in addition to `lists`
+
+### Sync Server
+- New endpoint `GET /api/stats` — load play statistics
+- New endpoint `POST /api/stats` — save play statistics
+- New endpoint `GET /api/cache` — load full album cache
+- New endpoint `POST /api/cache` — store single artist album cache entry
+- New data files: `stats.json`, `cache.json` (separate from `lists.json`)
 
 ---
 

@@ -32,4 +32,8 @@ window.SPOTIFY_CONFIG = {
     // syncUrl: 'https://sync.your-domain.com',
     // syncUrl: 'http://192.168.1.100:3001',  // local network
 
+    // Optional: sync play statistics across devices (requires syncUrl)
+    // Set to false to keep stats local-only even when syncUrl is set
+    syncStats: true,
+
 };

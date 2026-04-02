@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════
-   MUSIC SHUFFLE — app.js  v1.1.2
+   MUSIC SHUFFLE — app.js  v1.2.0
    ═══════════════════════════════════════════════════════ */
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.2.0';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -41,6 +41,7 @@ const State = {
 // ── LOCAL STORAGE ─────────────────────────────────────────────────────────────
 const LS = {
   _syncTimer: null,
+  _statsSyncTimer: null,
   save() {
     localStorage.setItem('as_lists',     JSON.stringify(State.lists));
     localStorage.setItem('as_blacklist', JSON.stringify(State.blacklist));
@@ -48,7 +49,12 @@ const LS = {
     localStorage.setItem('as_volume',    State.volume);
     localStorage.setItem('as_active_list', State.activeListId || '');
     clearTimeout(this._syncTimer);
-    this._syncTimer = setTimeout(() => Sync.save(), 3000);
+    this._syncTimer = setTimeout(() => Sync.save(), 10000);
+  },
+  saveStatsDebounced() {
+    localStorage.setItem('as_stats', JSON.stringify(State.stats));
+    clearTimeout(this._statsSyncTimer);
+    this._statsSyncTimer = setTimeout(() => Sync.saveStats(), 30000);
   },
   load() {
     try { State.lists     = JSON.parse(localStorage.getItem('as_lists')     || '[]'); } catch { State.lists = []; }
@@ -66,13 +72,14 @@ const LS = {
   },
 };
 
-function defaultFilters() { return { noLive: false, yearFrom: null, yearTo: null }; }
+function defaultFilters() { return { noLive: false, noInstrumental: false, yearFrom: null, yearTo: null }; }
 
 // ── SYNC ──────────────────────────────────────────────────────────────────────
 const Sync = {
-  get url() { return window.SPOTIFY_CONFIG?.syncUrl || null; },
+  get url()       { return window.SPOTIFY_CONFIG?.syncUrl   || null; },
+  get statsSync() { return window.SPOTIFY_CONFIG?.syncStats !== false; }, // default true wenn syncUrl gesetzt
 
-  async _request(method, body) {
+  async _request(method, endpoint, body) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
     try {
@@ -82,7 +89,7 @@ const Sync = {
         opts.headers = { 'Content-Type': 'application/json' };
         opts.body    = JSON.stringify(body);
       }
-      const res = await fetch(`${this.url}/api/lists`, opts);
+      const res = await fetch(`${this.url}${endpoint}`, opts);
       clearTimeout(timeout);
       return res.ok ? res.json() : null;
     } catch { clearTimeout(timeout); return null; }
@@ -90,7 +97,7 @@ const Sync = {
 
   async load() {
     if (!this.url) return false;
-    const data = await this._request('GET');
+    const data = await this._request('GET', '/api/lists');
     if (!data?.lists?.length) return false;
     const serverIds = new Set(data.lists.map(l => l.id));
     const localOnly = State.lists.filter(l => !serverIds.has(l.id));
@@ -103,8 +110,26 @@ const Sync = {
 
   async save() {
     if (!this.url) return false;
-    const ok = await this._request('POST', { lists: State.lists });
+    const ok = await this._request('POST', '/api/lists', { lists: State.lists });
     if (ok) console.log('[Sync] Saved:', State.lists.length);
+    return !!ok;
+  },
+
+  async loadStats() {
+    if (!this.url || !this.statsSync) return false;
+    const data = await this._request('GET', '/api/stats');
+    if (!data?.plays) return false;
+    // Server-Stats übernehmen (last-write-wins — wir hören nur auf einem Gerät)
+    State.stats = { plays: data.plays || [], shuffles: data.shuffles || 0 };
+    localStorage.setItem('as_stats', JSON.stringify(State.stats));
+    console.log('[Sync] Stats loaded:', data.plays.length, 'plays');
+    return true;
+  },
+
+  async saveStats() {
+    if (!this.url || !this.statsSync) return false;
+    const ok = await this._request('POST', '/api/stats', { plays: State.stats.plays, shuffles: State.stats.shuffles });
+    if (ok) console.log('[Sync] Stats saved:', State.stats.plays.length, 'plays');
     return !!ok;
   },
 
@@ -196,6 +221,13 @@ async function bootApp() {
 
   const synced = await Sync.load();
   if (synced) console.log('[Sync] Synced');
+  await Sync.loadStats();
+
+  // Album-Cache vom Sync-Server laden — reduziert Spotify API Calls beim Start
+  if (Sync.url) {
+    SpotifyAPI.setServerCacheUrl(Sync.url);
+    SpotifyAPI.loadServerCache();
+  }
 
   renderLists();
   renderArtistGrid();
@@ -833,6 +865,7 @@ function updateFiltersUI() {
   const list = getActiveList();
   const f    = list?.filters || defaultFilters();
   document.getElementById('filter-no-live').checked = !!f.noLive;
+  document.getElementById('filter-no-instrumental').checked = !!f.noInstrumental;
 
   const fromInput = document.getElementById('filter-year-from');
   const fromBtn   = document.getElementById('filter-year-from-toggle');
@@ -851,18 +884,20 @@ function saveFilters() {
   const list = getActiveList();
   if (!list) return;
   list.filters = {
-    noLive:   document.getElementById('filter-no-live').checked,
-    yearFrom: parseInt(document.getElementById('filter-year-from').value, 10) || null,
-    yearTo:   parseInt(document.getElementById('filter-year-to').value,   10) || null,
+    noLive:          document.getElementById('filter-no-live').checked,
+    noInstrumental:  document.getElementById('filter-no-instrumental').checked,
+    yearFrom:        parseInt(document.getElementById('filter-year-from').value, 10) || null,
+    yearTo:          parseInt(document.getElementById('filter-year-to').value,   10) || null,
   };
   LS.save(); updateFiltersBadge(list.filters);
 }
 
 function updateFiltersBadge(f) {
   let n = 0;
-  if (f.noLive)   n++;
-  if (f.yearFrom) n++;
-  if (f.yearTo)   n++;
+  if (f.noLive)          n++;
+  if (f.noInstrumental)  n++;
+  if (f.yearFrom)        n++;
+  if (f.yearTo)          n++;
   const badge = document.getElementById('filters-badge');
   badge.textContent = n;
   badge.classList.toggle('hidden', n === 0);
@@ -899,7 +934,10 @@ function _buildPool(list) {
   // Artists get 3 entries each — they have full discographies to pick from
   // Albums get 1 entry each — they are a single album
   // This balances the randomness so a single album doesn't dominate
-  (list.artists || []).forEach(a => { pool.push({ type: 'artist', data: a }); pool.push({ type: 'artist', data: a }); pool.push({ type: 'artist', data: a }); });
+  // Artists 5× weight — each has a full discography vs a single album
+  (list.artists || []).forEach(a => {
+    for (let i = 0; i < 5; i++) pool.push({ type: 'artist', data: a });
+  });
   (list.albums  || []).forEach(a => pool.push({ type: 'album',  data: a }));
   (list.genres  || []).forEach(g => pool.push({ type: 'genre',  data: g }));
   return pool;
@@ -941,7 +979,7 @@ async function doShuffle() {
     }
 
     await playTrack(track);
-    setTimeout(() => fillQueue(), 5000);
+    setTimeout(() => fillQueue(), 20000);
   } catch (err) { handlePlaybackError(err); }
 }
 
@@ -1354,7 +1392,8 @@ function toggleMute() {
 // ── STATS ──────────────────────────────────────────────────────────────────────
 function trackPlay(track) {
   State.stats.plays.push({ trackId: track.id, trackName: track.name, artistId: track.artistId, artistName: track.artist, ts: Date.now(), duration: track.duration || 0 });
-  LS.save(); renderStats();
+  LS.saveStatsDebounced();
+  renderStats();
 }
 
 function renderStats() {
@@ -1445,11 +1484,28 @@ async function createPlaylistFromHistory() {
 }
 
 // ── ERROR ──────────────────────────────────────────────────────────────────────
+let _rateLimitRetryTimer = null;
+
 function handlePlaybackError(err) {
-  if (err.message === 'PREMIUM_REQUIRED')                   showToast(I18N.t('toast_premium'), 'error');
-  else if (err.message === 'NOT_AUTHENTICATED')             showLoginScreen();
-  else if (err.message?.includes('No active device'))       showToast('Bitte ein Wiedergabegerät auswählen', 'error');
-  else { showToast('Fehler: ' + err.message, 'error'); console.error('[Playback Error]', err); }
+  if (err.message === 'PREMIUM_REQUIRED') {
+    showToast(I18N.t('toast_premium'), 'error');
+  } else if (err.message === 'NOT_AUTHENTICATED') {
+    showLoginScreen();
+  } else if (err.message?.includes('No active device')) {
+    showToast('Bitte ein Wiedergabegerät auswählen', 'error');
+  } else if (err.message?.includes('Rate limit')) {
+    if (_rateLimitRetryTimer) return;
+    showToast('⏳ Spotify Rate Limit — versuche in 35s erneut…', 'info');
+    console.warn('[Playback] Rate limit — retry in 35s');
+    _rateLimitRetryTimer = setTimeout(() => {
+      _rateLimitRetryTimer = null;
+      console.log('[Playback] Rate limit retry…');
+      doShuffle();
+    }, 35000);
+  } else {
+    showToast('Fehler: ' + err.message, 'error');
+    console.error('[Playback Error]', err);
+  }
 }
 
 // ── TOAST ──────────────────────────────────────────────────────────────────────
@@ -1746,6 +1802,7 @@ function bindAllEvents() {
 
   // Filters
   document.getElementById('filter-no-live').addEventListener('change', saveFilters);
+  document.getElementById('filter-no-instrumental').addEventListener('change', saveFilters);
   document.getElementById('filter-year-from').addEventListener('change', saveFilters);
   document.getElementById('filter-year-to').addEventListener('change', saveFilters);
   ['from', 'to'].forEach(dir => {
@@ -1804,9 +1861,9 @@ function bindAllEvents() {
   document.getElementById('sync-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('sync-btn');
     btn.classList.add('spinning');
-    const ok = await Sync.load();
+    const [ok] = await Promise.all([Sync.load(), Sync.loadStats()]);
     btn.classList.remove('spinning');
-    if (ok) { renderLists(); renderArtistGrid(); renderAlbumGrid(); updateFiltersUI(); showToast(I18N.t('toast_synced'), 'success'); }
+    if (ok) { renderLists(); renderArtistGrid(); renderAlbumGrid(); updateFiltersUI(); renderStats(); showToast(I18N.t('toast_synced'), 'success'); }
     else showToast('Sync fehlgeschlagen', 'error');
   });
 
@@ -1821,6 +1878,42 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.2.0',
+    date: '2026-04-03',
+    label: { de: 'Sync & Filter Release', en: 'Sync & Filter Release' },
+    added: {
+      de: [
+        'Stats-Sync — Wiedergabe-Statistiken werden geräteübergreifend über den Sync-Server gespeichert',
+        'Album-Cache auf dem Sync-Server — Spotify API Calls werden nach dem ersten Abruf serverübergreifend gecacht (24h TTL)',
+        'Instrumental-Filter — Tracks mit "instrumental", "karaoke", "backing track" usw. im Namen ausblenden (pro Liste)',
+        'config.js: syncStats Flag — Stats-Sync unabhängig von Listen-Sync deaktivierbar',
+      ],
+      en: [
+        'Stats sync — play statistics stored across devices via sync server',
+        'Server-side album cache — Spotify API calls cached on sync server after first fetch (24h TTL)',
+        'Instrumental filter — hide tracks with "instrumental", "karaoke", "backing track" etc. in name (per list)',
+        'config.js: syncStats flag — disable stats sync independently of list sync',
+      ],
+    },
+    changed: {
+      de: [
+        'Spotify 429 Rate Limit: bis zu 3 Retries statt 1 — Musik läuft bei vorübergehenden Limits weiter',
+        'Rate Limit Recovery: automatischer Shuffle-Retry nach 35s statt Musik-Stopp',
+        'fillQueue startet 20s nach dem ersten Track — gibt Server-Cache Zeit zum Laden',
+        'Stats-Debounce: 30s Verzögerung vor Server-Sync (statt pro Song)',
+        'Sync-Server: /api/health gibt jetzt auch Anzahl der gecachten Plays zurück',
+      ],
+      en: [
+        'Spotify 429 rate limit: up to 3 retries instead of 1 — music continues during temporary limits',
+        'Rate limit recovery: automatic shuffle retry after 35s instead of stopping',
+        'fillQueue starts 20s after first track — gives server cache time to load',
+        'Stats debounce: 30s delay before server sync (instead of per song)',
+        'Sync server: /api/health now also returns cached play count',
+      ],
+    },
+  },
+  {
   {
     version: '1.1.2',
     date: '2026-03-29',

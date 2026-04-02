@@ -58,6 +58,7 @@ const I18N = (() => {
       // Filters
       filter_title: 'Filter',
       filter_no_live: '🚫 Keine Live-Alben',
+      filter_no_instrumental: '🎼 Keine Instrumentals',
       filter_year_from: '📅 Ab Jahr',
       filter_year_from_placeholder: '1990',
       filter_year_to: '📅 Bis Jahr',
@@ -238,6 +239,7 @@ const I18N = (() => {
       // Filters
       filter_title: 'Filter',
       filter_no_live: '🚫 No live albums',
+      filter_no_instrumental: '🎼 No instrumentals',
       filter_year_from: '📅 From year',
       filter_year_from_placeholder: '1990',
       filter_year_to: '📅 To year',

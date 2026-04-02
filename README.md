@@ -2,7 +2,7 @@
 
 > Shuffle through your favorite Spotify artists and genres — no algorithm, just your picks.
 
-[![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Vanilla JS](https://img.shields.io/badge/Built%20with-Vanilla%20JS-yellow)
 ![Spotify API](https://img.shields.io/badge/Spotify-Web%20API%20%2B%20SDK-1DB954)
@@ -42,6 +42,7 @@
 
 ### 🔍 Filters (per list)
 - 🚫 No live albums
+- 🎼 No instrumentals — filters tracks with "instrumental", "karaoke", "backing track" etc. in the name
 - 📅 Year range
 
 ### 🔎 Discovery
@@ -54,6 +55,7 @@
 - Weekly sessions chart
 - **Shuffle log** — why was each track chosen?
 - **Artist stats** — per-artist play count and top songs (click any artist card)
+- **Cross-device stats sync** — play statistics shared across all devices via sync server
 
 ### 🖥️ UI / UX
 - Dark theme (Spotify-inspired)
@@ -64,7 +66,7 @@
 - Fully responsive (mobile + desktop)
 - Keyboard shortcuts
 - Spotify Connect device selector (Sonos, speakers, phone, etc.)
-- Auto-refresh device list every 30 seconds
+- Auto-refresh device list every 2 minutes
 
 ---
 
@@ -123,7 +125,8 @@ Edit `config.js`:
 window.SPOTIFY_CONFIG = {
     clientId: 'YOUR_CLIENT_ID_HERE',
     redirectUri: 'https://your-domain.com/',
-    syncUrl: null, // optional — see sync-server/SYNC-SERVER.md
+    syncUrl: null,   // optional — see sync-server/SYNC-SERVER.md
+    syncStats: true, // optional — set false to keep stats local only
 };
 ```
 
@@ -234,12 +237,29 @@ music-shuffle/
 
 ## 🔄 Cross-Device Sync (Optional)
 
-The optional sync server keeps your artist lists in sync across all devices. It's a minimal Node.js HTTP server that stores lists in a JSON file — no database needed.
+The optional sync server keeps your artist lists, play statistics and album cache in sync across all devices. It's a minimal Node.js HTTP server — no database needed.
 
 Setup with Docker in minutes. See [sync-server/SYNC-SERVER.md](sync-server/SYNC-SERVER.md).
 
 ```
 Desktop (PWA)  ←→  Sync Server  ←→  Mobile (PWA)
+```
+
+### What gets synced
+
+| Data | Endpoint | Notes |
+|------|----------|-------|
+| Artist lists | `/api/lists` | Always synced when `syncUrl` is set |
+| Play statistics | `/api/stats` | Synced when `syncUrl` is set; disable with `syncStats: false` |
+| Album cache | `/api/cache` | Shared 24h cache — eliminates cold-start Spotify API calls |
+
+### Health check
+
+```
+GET /api/health
+```
+```json
+{ "status": "ok", "lists": 3, "plays": 142, "updatedAt": "2026-04-03T..." }
 ```
 
 ---
@@ -265,7 +285,7 @@ Extended Quota (required to unlock restricted APIs) now requires 250,000 monthly
 
 ## 🔒 Privacy & Security
 
-- **No backend required** — all data stored in browser `localStorage`
+- **No external backend required** — all data stored in browser `localStorage` or your own sync server
 - **No analytics, no tracking, no ads**
 - **OAuth 2.0 PKCE** — most secure flow for public clients, no client secret needed
 - `config.js` is in `.gitignore` — your Client ID never gets committed

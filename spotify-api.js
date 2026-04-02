@@ -119,7 +119,7 @@ const SpotifyAPI = (() => {
     _lastRequest = Date.now();
   }
 
-  async function _fetch(endpoint, options = {}, retried = false) {
+  async function _fetch(endpoint, options = {}, retryCount = 0) {
     await _throttle();
     const token = await getToken();
     if (!token) throw new Error('NOT_AUTHENTICATED');
@@ -130,14 +130,14 @@ const SpotifyAPI = (() => {
     });
 
     if (res.status === 401) {
-      if (!retried) { await _refreshAccessToken(); return _fetch(endpoint, options, true); }
+      if (!retryCount) { await _refreshAccessToken(); return _fetch(endpoint, options, 1); }
       _clearAuth(); throw new Error('NOT_AUTHENTICATED');
     }
     if (res.status === 429) {
       const wait = parseInt(res.headers.get('Retry-After')||'30', 10);
-      console.warn(`[API] Rate limited, waiting ${wait}s…`);
+      console.warn(`[API] Rate limited, waiting ${wait}s… (attempt ${retryCount + 1}/3)`);
       await _sleep(wait * 1000);
-      if (!retried) return _fetch(endpoint, options, true);
+      if (retryCount < 3) return _fetch(endpoint, options, retryCount + 1);
       throw new Error('Rate limit exceeded — bitte später versuchen');
     }
     if (res.status === 403) {
@@ -151,9 +151,53 @@ const SpotifyAPI = (() => {
   }
 
   // ── ALBUM CACHE ───────────────────────────────────────
+  // Server-Cache URL — wird von app.js gesetzt
+  let _serverCacheUrl = null;
+  function setServerCacheUrl(url) { _serverCacheUrl = url; }
+
+  // Kompletten Cache vom Server laden (einmalig beim Start)
+  async function loadServerCache() {
+    if (!_serverCacheUrl) return false;
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`${_serverCacheUrl}/api/cache`, { signal: controller.signal });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data?.cache) return false;
+      let count = 0;
+      for (const [artistId, entry] of Object.entries(data.cache)) {
+        // Nur laden wenn noch frisch (max 24h alt)
+        if (entry.ts && Date.now() - entry.ts < CACHE_TTL) {
+          _albumCache.set(artistId, entry);
+          count++;
+        }
+      }
+      console.log(`[Cache] Loaded ${count} artists from server`);
+      return count > 0;
+    } catch { return false; }
+  }
+
+  // Cache-Eintrag zum Server hochladen (nach Spotify-Abruf)
+  async function _pushCacheToServer(artistId, entry) {
+    if (!_serverCacheUrl) return;
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 3000);
+      await fetch(`${_serverCacheUrl}/api/cache`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artistId, albums: entry.albums, ts: entry.ts }),
+        signal: controller.signal,
+      });
+    } catch { /* fire and forget */ }
+  }
+
   async function _getCachedAlbums(artistId) {
+    // 1. In-Memory Cache prüfen
     const cached = _albumCache.get(artistId);
     if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.albums;
+    // 2. Spotify API abrufen
     const albums = [];
     for (let offset = 0; offset < 40; offset += 10) {
       const data = await _fetch(`/artists/${artistId}/albums?include_groups=album,single&limit=10&offset=${offset}`).catch(()=>null);
@@ -161,7 +205,10 @@ const SpotifyAPI = (() => {
       albums.push(...items);
       if (items.length < 10) break;
     }
-    _albumCache.set(artistId, { albums, ts: Date.now() });
+    const entry = { albums, ts: Date.now() };
+    _albumCache.set(artistId, entry);
+    // 3. Zum Server pushen damit andere Geräte / nächster Start davon profitieren
+    _pushCacheToServer(artistId, entry);
     return albums;
   }
 
@@ -178,6 +225,14 @@ const SpotifyAPI = (() => {
     let r = tracks.filter(t => !blacklist.has(t.id));
     if (filters.noLive) {
       r = r.filter(t => { const n=(t.album?.name||'').toLowerCase(); return !n.includes('live')&&!n.includes('concert')&&!n.includes('unplugged'); });
+    }
+    if (filters.noInstrumental) {
+      r = r.filter(t => {
+        const n = (t.name||'').toLowerCase();
+        return !n.includes('instrumental') && !n.includes('karaoke') &&
+               !n.includes('backing track') && !n.includes('playback') &&
+               !n.includes('(inst') && !n.includes('inst.');
+      });
     }
     if (filters.yearFrom || filters.yearTo) {
       r = r.filter(t => {
@@ -295,6 +350,7 @@ const SpotifyAPI = (() => {
     getDevices, playTrack, setVolume, seek, transferPlayback, setRepeat,
     getRandomTrack, getArtistAlbumsFull, getRandomTrackFromAlbum,
     getRandomTrackByGenre, getAvailableGenres,
+    setServerCacheUrl, loadServerCache,
   };
 
 })();
