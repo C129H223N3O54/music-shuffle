@@ -2,7 +2,7 @@
 
 > Shuffle through your favorite Spotify artists and genres — no algorithm, just your picks.
 
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Vanilla JS](https://img.shields.io/badge/Built%20with-Vanilla%20JS-yellow)
 ![Spotify API](https://img.shields.io/badge/Spotify-Web%20API%20%2B%20SDK-1DB954)
@@ -64,7 +64,7 @@
 - **Per-artist track lock** — each track only repeats after the full discography has been played
 
 ### 🖥️ UI / UX
-- Dark theme (Spotify-inspired)
+- Dark theme — Sideforge Design System (Ember orange / Anvil warm grays)
 - Dynamic album art background with color-matched shadow glow
 - Fullscreen mode (`F` key)
 - **Desktop notifications** — song change alert when tab is in background
@@ -257,6 +257,7 @@ Desktop (PWA)  ←→  Sync Server  ←→  Mobile (PWA)
 |------|----------|-------|
 | Artist lists | `/api/lists` | Always synced when `syncUrl` is set |
 | Play statistics | `/api/stats` | Synced when `syncUrl` is set; disable with `syncStats: false` |
+| Blacklist | `/api/blacklist` | Blacklisted tracks synced across devices, merged on load |
 | Album cache | `/api/cache` | Shared 24h cache — eliminates cold-start Spotify API calls |
 
 ### Health check
@@ -265,7 +266,7 @@ Desktop (PWA)  ←→  Sync Server  ←→  Mobile (PWA)
 GET /api/health
 ```
 ```json
-{ "status": "ok", "lists": 3, "plays": 142, "updatedAt": "2026-04-03T..." }
+{ "status": "ok", "lists": 3, "plays": 142, "blacklist": 12, "updatedAt": "2026-04-25T..." }
 ```
 
 ---
@@ -293,6 +294,7 @@ Extended Quota (required to unlock restricted APIs) now requires 250,000 monthly
 
 - **No external backend required** — all data stored in browser `localStorage` or your own sync server
 - **No analytics, no tracking, no ads**
+- **No external font loading** — Verdana system font, no Google Fonts
 - **OAuth 2.0 PKCE** — most secure flow for public clients, no client secret needed
 - `config.js` is in `.gitignore` — your Client ID never gets committed
 - Blacklisted tracks and albums stored locally in `localStorage`

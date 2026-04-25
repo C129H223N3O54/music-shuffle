@@ -2,7 +2,7 @@
 
 > Shuffle durch deine liebsten Spotify-Artists und Genres — kein Algorithmus, nur deine Auswahl.
 
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Vanilla JS](https://img.shields.io/badge/Gebaut%20mit-Vanilla%20JS-yellow)
 ![Spotify API](https://img.shields.io/badge/Spotify-Web%20API%20%2B%20SDK-1DB954)
@@ -64,7 +64,7 @@
 - **Track-Sperre pro Artist** — jeder Track wird erst wiederholt wenn die gesamte Diskografie gespielt wurde
 
 ### 🖥️ UI / UX
-- Dark Theme (Spotify-inspiriert)
+- Dark Theme — Sideforge Design System (Ember-Orange / Anvil Warmgrau)
 - Dynamischer Album-Cover-Hintergrund mit farblich passendem Schatten
 - Vollbild-Modus (`F`-Taste)
 - **Desktop-Benachrichtigungen** — Song-Wechsel-Alert wenn Tab im Hintergrund
@@ -256,6 +256,7 @@ Desktop (PWA)  ←→  Sync-Server  ←→  Mobil (PWA)
 |-------|----------|---------|
 | Artist-Listen | `/api/lists` | Immer synchronisiert wenn `syncUrl` gesetzt |
 | Wiedergabe-Statistiken | `/api/stats` | Synchronisiert wenn `syncUrl` gesetzt; deaktivierbar mit `syncStats: false` |
+| Blacklist | `/api/blacklist` | Gesperrte Tracks geräteübergreifend synchronisiert, beim Laden gemergt |
 | Album-Cache | `/api/cache` | Geteilter 24h-Cache — verhindert Spotify API Calls beim Start |
 
 ### Health Check
@@ -264,7 +265,7 @@ Desktop (PWA)  ←→  Sync-Server  ←→  Mobil (PWA)
 GET /api/health
 ```
 ```json
-{ "status": "ok", "lists": 3, "plays": 142, "updatedAt": "2026-04-03T..." }
+{ "status": "ok", "lists": 3, "plays": 142, "blacklist": 12, "updatedAt": "2026-04-25T..." }
 ```
 
 ---
@@ -292,6 +293,7 @@ Extended Quota (zum Entsperren der eingeschränkten APIs) erfordert seit 2025 25
 
 - **Kein externes Backend nötig** — alle Daten im Browser `localStorage` oder deinem eigenen Sync-Server
 - **Keine Analytics, kein Tracking, keine Werbung**
+- **Kein externer Font-Request** — Verdana System-Schrift, kein Google Fonts
 - **OAuth 2.0 PKCE** — sicherster Flow für öffentliche Clients, kein Client Secret nötig
 - `config.js` ist in `.gitignore` — deine Client ID wird nie committed
 

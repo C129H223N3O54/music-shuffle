@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════
-   MUSIC SHUFFLE — app.js  v1.3.1
+   MUSIC SHUFFLE — app.js  v1.3.3
    ═══════════════════════════════════════════════════════ */
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.3';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -47,6 +47,7 @@ const State = {
 const LS = {
   _syncTimer: null,
   _statsSyncTimer: null,
+  _blacklistSyncTimer: null,
   save() {
     localStorage.setItem('as_lists',     JSON.stringify(State.lists));
     localStorage.setItem('as_blacklist', JSON.stringify(State.blacklist));
@@ -55,6 +56,11 @@ const LS = {
     localStorage.setItem('as_active_list', State.activeListId || '');
     clearTimeout(this._syncTimer);
     this._syncTimer = setTimeout(() => Sync.save(), 10000);
+  },
+  saveBlacklistDebounced() {
+    localStorage.setItem('as_blacklist', JSON.stringify(State.blacklist));
+    clearTimeout(this._blacklistSyncTimer);
+    this._blacklistSyncTimer = setTimeout(() => Sync.saveBlacklist(), 10000);
   },
   saveStatsDebounced() {
     localStorage.setItem('as_stats', JSON.stringify(State.stats));
@@ -135,6 +141,26 @@ const Sync = {
     if (!this.url || !this.statsSync) return false;
     const ok = await this._request('POST', '/api/stats', { plays: State.stats.plays, shuffles: State.stats.shuffles });
     if (ok) console.log('[Sync] Stats saved:', State.stats.plays.length, 'plays');
+    return !!ok;
+  },
+
+  async loadBlacklist() {
+    if (!this.url) return false;
+    const data = await this._request('GET', '/api/blacklist');
+    if (!Array.isArray(data?.blacklist)) return false;
+    // Mergen: Server-Einträge + lokale die nicht auf dem Server sind
+    const serverIds = new Set(data.blacklist.map(b => b.id));
+    const localOnly = State.blacklist.filter(b => !serverIds.has(b.id));
+    State.blacklist = [...data.blacklist, ...localOnly];
+    localStorage.setItem('as_blacklist', JSON.stringify(State.blacklist));
+    console.log('[Sync] Blacklist loaded:', data.blacklist.length, 'tracks');
+    return true;
+  },
+
+  async saveBlacklist() {
+    if (!this.url) return false;
+    const ok = await this._request('POST', '/api/blacklist', { blacklist: State.blacklist });
+    if (ok) console.log('[Sync] Blacklist saved:', State.blacklist.length, 'tracks');
     return !!ok;
   },
 
@@ -227,6 +253,7 @@ async function bootApp() {
   const synced = await Sync.load();
   if (synced) console.log('[Sync] Synced');
   await Sync.loadStats();
+  await Sync.loadBlacklist();
 
   // Album-Cache vom Sync-Server laden — reduziert Spotify API Calls beim Start
   if (Sync.url) {
@@ -1279,7 +1306,7 @@ function renderQueue() {
 function addToBlacklist(track) {
   if (!track || State.blacklist.find(b => b.id === track.id)) return;
   State.blacklist.push({ id: track.id, name: track.name, artist: track.artist, albumArt: track.albumArt });
-  LS.save(); renderBlacklist();
+  LS.saveBlacklistDebounced(); renderBlacklist();
   showToast(`"${track.name}" zur Blacklist hinzugefügt`, 'info');
   playNextFromQueue();
 }
@@ -1319,7 +1346,7 @@ async function addAlbumToBlacklist() {
 
 function removeFromBlacklist(trackId) {
   State.blacklist = State.blacklist.filter(b => b.id !== trackId);
-  LS.save(); renderBlacklist();
+  LS.saveBlacklistDebounced(); renderBlacklist();
 }
 
 function renderBlacklist() {
@@ -1974,9 +2001,9 @@ function bindAllEvents() {
   document.getElementById('sync-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('sync-btn');
     btn.classList.add('spinning');
-    const [ok] = await Promise.all([Sync.load(), Sync.loadStats()]);
+    const [ok] = await Promise.all([Sync.load(), Sync.loadStats(), Sync.loadBlacklist()]);
     btn.classList.remove('spinning');
-    if (ok) { renderLists(); renderArtistGrid(); renderAlbumGrid(); updateFiltersUI(); renderStats(); showToast(I18N.t('toast_synced'), 'success'); }
+    if (ok) { renderLists(); renderArtistGrid(); renderAlbumGrid(); updateFiltersUI(); renderStats(); renderBlacklist(); showToast(I18N.t('toast_synced'), 'success'); }
     else showToast('Sync fehlgeschlagen', 'error');
   });
 
@@ -1991,6 +2018,58 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.3.3',
+    date: '2026-04-25',
+    label: { de: 'Sideforge & Blacklist-Sync', en: 'Sideforge & Blacklist Sync' },
+    added: {
+      de: [
+        'Sideforge Design System migriert — Ember-Orange Palette, Anvil-Grautöne (ersetzt Spotify-Grün)',
+        'Sideforge Logo (SF-Monogramm) im Sidebar-Header neben der Version',
+        'Sideforge Logo als Favicon (SVG)',
+        'Blacklist-Sync — gesperrte Tracks werden geräteübergreifend über den Sync-Server synchronisiert',
+        'Sync-Server: /api/blacklist Endpunkt (GET/POST), blacklist.json in /data/',
+        'Verdana als UI-Schrift (Sideforge v1.0.1) — keine Google Fonts mehr, schnellerer Start',
+      ],
+      en: [
+        'Sideforge Design System migrated — Ember orange palette, Anvil warm grays (replaces Spotify green)',
+        'Sideforge logo (SF monogram) in sidebar header next to version button',
+        'Sideforge logo as favicon (SVG)',
+        'Blacklist sync — blacklisted tracks synced across devices via sync server',
+        'Sync server: /api/blacklist endpoint (GET/POST), blacklist.json in /data/',
+        'Verdana as UI font (Sideforge v1.0.1) — no Google Fonts, faster page load',
+      ],
+    },
+    changed: {
+      de: [
+        'Google Fonts (Syne, DM Sans) entfernt — Verdana ist auf Windows/macOS/Linux vorinstalliert',
+        'Sync-Server /api/health gibt jetzt auch Blacklist-Count zurück',
+        'Blacklist-Sync mit Merge-Logik — lokale Einträge bleiben erhalten wenn sie nicht auf dem Server sind',
+      ],
+      en: [
+        'Google Fonts (Syne, DM Sans) removed — Verdana is pre-installed on Windows/macOS/Linux',
+        'Sync server /api/health now also returns blacklist count',
+        'Blacklist sync uses merge logic — local entries are preserved if not on server',
+      ],
+    },
+  },
+  {
+    version: '1.3.2',
+    date: '2026-04-25',
+    label: { de: 'Sideforge v1.0.1 — Verdana', en: 'Sideforge v1.0.1 — Verdana' },
+    changed: {
+      de: [
+        'Schrift auf Verdana umgestellt (Sideforge Design System v1.0.1) — keine Webfont-Downloads mehr, einheitlicher Look auf Windows/macOS/Linux',
+        'Google Fonts (Syne, DM Sans) entfernt — schnellerer Seitenstart, kein externer Request mehr',
+        'Logo-Schrift (Georgia italic) und Mono-Bereiche unverändert',
+      ],
+      en: [
+        'Font switched to Verdana (Sideforge Design System v1.0.1) — no webfont downloads, consistent look on Windows/macOS/Linux',
+        'Google Fonts (Syne, DM Sans) removed — faster page load, no external font request',
+        'Logo font (Georgia italic) and mono areas unchanged',
+      ],
+    },
+  },
   {
     version: '1.3.1',
     date: '2026-04-22',

@@ -1,19 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Dark background circle -->
-  <circle cx="16" cy="16" r="16" fill="#141420"/>
-  <!-- Vinyl grooves -->
-  <circle cx="16" cy="16" r="12" fill="none" stroke="#2a2a3a" stroke-width="1.5"/>
-  <circle cx="16" cy="16" r="9" fill="none" stroke="#222232" stroke-width="1"/>
-  <circle cx="16" cy="16" r="6" fill="none" stroke="#2a2a3a" stroke-width="0.8"/>
-  <!-- Vinyl label -->
-  <circle cx="16" cy="16" r="5" fill="#00C8B4"/>
-  <!-- Center hole -->
-  <circle cx="16" cy="16" r="1.5" fill="#141420"/>
-  <!-- Dice (top right) -->
-  <rect x="20" y="4" width="10" height="10" rx="2" fill="#f0f0f5" stroke="#00C8B4" stroke-width="0.8"/>
-  <!-- Dice dots (showing 4) -->
-  <circle cx="22.5" cy="6.5" r="1.2" fill="#1a1a28"/>
-  <circle cx="27.5" cy="6.5" r="1.2" fill="#1a1a28"/>
-  <circle cx="22.5" cy="11.5" r="1.2" fill="#1a1a28"/>
-  <circle cx="27.5" cy="11.5" r="1.2" fill="#1a1a28"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+  <rect width="28" height="28" rx="6" fill="#1A1A1A"/>
+  <text x="3" y="21" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="17" letter-spacing="-1">
+    <tspan fill="#E8600A">S</tspan><tspan fill="#F5F5F5">F</tspan>
+  </text>
 </svg>

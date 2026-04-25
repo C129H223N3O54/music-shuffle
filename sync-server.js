@@ -13,7 +13,8 @@ const path = require('path');
 const PORT = process.env.PORT || 3001;
 const DATA_FILE  = process.env.DATA_FILE  || '/data/lists.json';
 const STATS_FILE = process.env.STATS_FILE || '/data/stats.json';
-const CACHE_FILE = process.env.CACHE_FILE || '/data/cache.json';
+const CACHE_FILE      = process.env.CACHE_FILE      || '/data/cache.json';
+const BLACKLIST_FILE  = process.env.BLACKLIST_FILE  || '/data/blacklist.json';
 
 // ── DATEN LADEN / SPEICHERN ──────────────────────────────
 function loadData() {
@@ -84,6 +85,30 @@ function saveCache(data) {
     return true;
   } catch (err) {
     console.error('[Sync] Fehler beim Speichern des Cache:', err.message);
+    return false;
+  }
+}
+
+function loadBlacklist() {
+  try {
+    if (fs.existsSync(BLACKLIST_FILE)) {
+      return JSON.parse(fs.readFileSync(BLACKLIST_FILE, 'utf8'));
+    }
+  } catch (err) {
+    console.error('[Sync] Fehler beim Laden der Blacklist:', err.message);
+  }
+  return { blacklist: [], updatedAt: null };
+}
+
+function saveBlacklist(data) {
+  try {
+    const dir = path.dirname(BLACKLIST_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    data.updatedAt = new Date().toISOString();
+    fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('[Sync] Fehler beim Speichern der Blacklist:', err.message);
     return false;
   }
 }
@@ -218,14 +243,43 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/blacklist — Blacklist laden
+  if (req.method === 'GET' && pathname === '/api/blacklist') {
+    const data = loadBlacklist();
+    sendJSON(res, 200, data);
+    return;
+  }
+
+  // ── POST /api/blacklist — Blacklist speichern
+  if (req.method === 'POST' && pathname === '/api/blacklist') {
+    try {
+      const body = await readBody(req);
+      if (!Array.isArray(body.blacklist)) {
+        sendJSON(res, 400, { error: 'Invalid data — blacklist array required' });
+        return;
+      }
+      const ok = saveBlacklist({ blacklist: body.blacklist });
+      if (ok) {
+        sendJSON(res, 200, { success: true, count: body.blacklist.length });
+      } else {
+        sendJSON(res, 500, { error: 'Speichern fehlgeschlagen' });
+      }
+    } catch (err) {
+      sendJSON(res, 400, { error: err.message });
+    }
+    return;
+  }
+
   // ── GET /api/health — Health Check
   if (req.method === 'GET' && pathname === '/api/health') {
-    const data  = loadData();
-    const stats = loadStats();
+    const data      = loadData();
+    const stats     = loadStats();
+    const blacklist = loadBlacklist();
     sendJSON(res, 200, {
       status: 'ok',
-      lists: data.lists?.length || 0,
-      plays: stats.plays?.length || 0,
+      lists:     data.lists?.length      || 0,
+      plays:     stats.plays?.length     || 0,
+      blacklist: blacklist.blacklist?.length || 0,
       updatedAt: data.updatedAt,
     });
     return;

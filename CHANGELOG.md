@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
+
+---
+
 ## [1.3.1] — 2026-04-22 — Album Blacklist
 
 ### Added
@@ -81,6 +108,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
+
+---
+
 ## [1.3.1] — 2026-04-22 — Album Blacklist
 
 ### Added
@@ -144,6 +198,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each artist and album has equal chance of being picked (1 entry each in pool)
 - Artists with more albums naturally provide more variety when selected
 - Smart Shuffle still applies — artists not played recently get higher weight
+
+---
+
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
 
 ---
 
@@ -229,6 +310,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
+
+---
+
 ## [1.3.1] — 2026-04-22 — Album Blacklist
 
 ### Added
@@ -287,6 +395,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Artist grid switched from 3 to 2 columns — larger images, more breathing room
+
+---
+
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
 
 ---
 
@@ -350,6 +485,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Artist cards no longer shrink with many artists — fixed size with scrollbar
 - Year filters were always active even when empty
+
+---
+
+## [1.3.3] — 2026-04-25 — Sideforge & Blacklist Sync
+
+### Added
+- **Sideforge Design System** — migrated from Spotify-green to the Sideforge Ember/Anvil palette; warm orange accents, warm grayscale backgrounds
+- **Sideforge logo** (SF monogram) in sidebar header, left of the version button
+- **Sideforge favicon** — SVG favicon with SF monogram replaces the vinyl+dice icon
+- **Blacklist sync** — blacklisted tracks are now synced across all devices via the sync server (merged on load, 10s debounce on save)
+- **Sync server `/api/blacklist`** — `GET` and `POST` endpoints, stored in `/data/blacklist.json`
+- **Verdana UI font** (Sideforge Design System v1.0.1) — replaces Syne + DM Sans; no webfont download, consistent look on Windows/macOS/Linux
+
+### Changed
+- **Google Fonts removed** — no more external font requests on page load; app works fully offline
+- **Sync server `/api/health`** — now also returns `blacklist` count
+- **Blacklist sync merge logic** — local entries not present on the server are preserved on load
+
+---
+
+## [1.3.2] — 2026-04-25 — Sideforge v1.0.1 — Verdana
+
+### Changed
+- **Font migrated to Verdana** (Sideforge Design System v1.0.1) — `Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif` replaces Syne + DM Sans across all UI elements
+- **Google Fonts removed** — no more external font requests on page load; faster startup, works fully offline
+- Logo font (Georgia italic bold) unchanged — intentional contrast, per Sideforge spec
+- Mono areas (`font-family: monospace`) unchanged
 
 ---
 

@@ -1,0 +1,461 @@
+/* ==========================================================================
+   Sideforge Design Tokens
+   Version: 1.0.1
+   Author:  JEM (kampfmade)
+   License: MIT
+
+   Usage:
+     <link rel="stylesheet" href="sideforge-tokens.css">
+
+   All tokens auto-adapt to Light and Dark mode via prefers-color-scheme.
+   Override mode manually with <html data-theme="light"> or data-theme="dark".
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. Ramp definitions — raw color scales (mode-independent)
+   -------------------------------------------------------------------------- */
+:root {
+
+  /* Ember — Primary (orange, the forge glow) */
+  --sf-ember-50:  #FFF4EC;
+  --sf-ember-100: #FDD9BC;
+  --sf-ember-200: #FBC296;
+  --sf-ember-300: #F5A05A;
+  --sf-ember-400: #F07E2D;
+  --sf-ember-500: #E8600A;
+  --sf-ember-600: #CC5208;
+  --sf-ember-700: #B84905;
+  --sf-ember-800: #8C3800;
+  --sf-ember-900: #5A2300;
+
+  /* Moss — Secondary (green, the outside) */
+  --sf-moss-50:  #EFF5E4;
+  --sf-moss-100: #C9DEA0;
+  --sf-moss-200: #AACB6F;
+  --sf-moss-300: #8BB94A;
+  --sf-moss-400: #74A732;
+  --sf-moss-500: #639922;
+  --sf-moss-600: #4E7B19;
+  --sf-moss-700: #3B6D11;
+  --sf-moss-800: #27500A;
+  --sf-moss-900: #173404;
+
+  /* Anvil — Neutrals (warm grays) */
+  --sf-anvil-50:  #FAFAF7;
+  --sf-anvil-100: #F1EFE8;
+  --sf-anvil-200: #E5E5E0;
+  --sf-anvil-300: #B4B2A9;
+  --sf-anvil-400: #888780;
+  --sf-anvil-500: #5F5E5A;
+  --sf-anvil-600: #444441;
+  --sf-anvil-700: #2C2C2A;
+  --sf-anvil-800: #1A1A1A;
+  --sf-anvil-900: #0F0F0F;
+
+  /* Semantic — for consistent status colors */
+  --sf-danger:  #A32D2D;
+  --sf-warning: #BA7517;
+  --sf-info:    #185FA5;
+
+
+  /* ------------------------------------------------------------------------
+     2. Typography
+     ------------------------------------------------------------------------ */
+  --sf-font-sans: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
+  --sf-font-mono: "SF Mono", Menlo, Monaco, Consolas,
+                  "Courier New", monospace;
+  --sf-font-serif: Georgia, "Times New Roman", serif;
+
+  --sf-text-xs:   11px;
+  --sf-text-sm:   12px;
+  --sf-text-base: 13px;
+  --sf-text-md:   14px;
+  --sf-text-lg:   16px;
+  --sf-text-xl:   20px;
+  --sf-text-2xl:  28px;
+
+  --sf-weight-regular: 400;
+  --sf-weight-medium:  500;
+  --sf-weight-bold:    700;
+
+  --sf-leading-tight:  1.3;
+  --sf-leading-normal: 1.5;
+  --sf-leading-loose:  1.7;
+
+
+  /* ------------------------------------------------------------------------
+     3. Spacing & Layout
+     ------------------------------------------------------------------------ */
+  --sf-space-1:  4px;
+  --sf-space-2:  8px;
+  --sf-space-3:  12px;
+  --sf-space-4:  16px;
+  --sf-space-5:  20px;
+  --sf-space-6:  24px;
+  --sf-space-8:  32px;
+  --sf-space-10: 40px;
+
+  --sf-radius-sm: 4px;
+  --sf-radius-md: 6px;
+  --sf-radius-lg: 10px;
+  --sf-radius-xl: 14px;
+  --sf-radius-pill: 999px;
+
+  --sf-border-thin:  0.5px;
+  --sf-border-base:  1px;
+  --sf-border-thick: 2px;
+
+
+  /* ------------------------------------------------------------------------
+     4. Transitions
+     ------------------------------------------------------------------------ */
+  --sf-transition-fast:   120ms ease;
+  --sf-transition-base:   180ms ease;
+  --sf-transition-slow:   280ms ease;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. Light mode (default) — semantic tokens
+   -------------------------------------------------------------------------- */
+:root,
+:root[data-theme="light"] {
+  --sf-bg:            var(--sf-anvil-50);
+  --sf-surface:       #FFFFFF;
+  --sf-surface-alt:   var(--sf-anvil-100);
+  --sf-surface-sunk:  var(--sf-anvil-200);
+
+  --sf-text:          var(--sf-anvil-900);
+  --sf-text-muted:    var(--sf-anvil-500);
+  --sf-text-subtle:   var(--sf-anvil-400);
+  --sf-text-inverse:  #FFFFFF;
+
+  --sf-border:        var(--sf-anvil-200);
+  --sf-border-strong: var(--sf-anvil-300);
+
+  --sf-accent:        var(--sf-ember-500);
+  --sf-accent-hover:  var(--sf-ember-600);
+  --sf-accent-soft:   var(--sf-ember-50);
+  --sf-accent-text:   var(--sf-ember-800);
+
+  --sf-success:       var(--sf-moss-700);
+  --sf-success-soft:  var(--sf-moss-50);
+  --sf-success-text:  var(--sf-moss-900);
+
+  --sf-danger-soft:   #FCEBEB;
+  --sf-warning-soft:  #FAEEDA;
+  --sf-info-soft:     #E6F1FB;
+
+  --sf-logo-bg:       var(--sf-anvil-800);
+  --sf-logo-s:        var(--sf-ember-500);
+  --sf-logo-f:        #F5F5F5;
+
+  --sf-focus-ring:    0 0 0 3px rgba(232, 96, 10, 0.25);
+  --sf-shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.04);
+  --sf-shadow-md:     0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+
+/* --------------------------------------------------------------------------
+   6. Dark mode — via media query (auto) or data-theme="dark" (manual)
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sf-bg:            var(--sf-anvil-900);
+    --sf-surface:       var(--sf-anvil-800);
+    --sf-surface-alt:   #141414;
+    --sf-surface-sunk:  #0a0a0a;
+
+    --sf-text:          #F5F5F5;
+    --sf-text-muted:    var(--sf-anvil-300);
+    --sf-text-subtle:   var(--sf-anvil-400);
+    --sf-text-inverse:  var(--sf-anvil-900);
+
+    --sf-border:        var(--sf-anvil-700);
+    --sf-border-strong: var(--sf-anvil-600);
+
+    --sf-accent:        var(--sf-ember-300);
+    --sf-accent-hover:  var(--sf-ember-200);
+    --sf-accent-soft:   #2A1906;
+    --sf-accent-text:   var(--sf-ember-100);
+
+    --sf-success:       var(--sf-moss-300);
+    --sf-success-soft:  #1F2A14;
+    --sf-success-text:  var(--sf-moss-100);
+
+    --sf-danger-soft:   #2A0F0F;
+    --sf-warning-soft:  #2A1E0A;
+    --sf-info-soft:     #0A1E2E;
+
+    --sf-logo-bg:       var(--sf-anvil-800);
+    --sf-logo-s:        var(--sf-ember-500);
+    --sf-logo-f:        #F5F5F5;
+
+    --sf-focus-ring:    0 0 0 3px rgba(245, 160, 90, 0.35);
+    --sf-shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.3);
+    --sf-shadow-md:     0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  --sf-bg:            var(--sf-anvil-900);
+  --sf-surface:       var(--sf-anvil-800);
+  --sf-surface-alt:   #141414;
+  --sf-surface-sunk:  #0a0a0a;
+
+  --sf-text:          #F5F5F5;
+  --sf-text-muted:    var(--sf-anvil-300);
+  --sf-text-subtle:   var(--sf-anvil-400);
+  --sf-text-inverse:  var(--sf-anvil-900);
+
+  --sf-border:        var(--sf-anvil-700);
+  --sf-border-strong: var(--sf-anvil-600);
+
+  --sf-accent:        var(--sf-ember-300);
+  --sf-accent-hover:  var(--sf-ember-200);
+  --sf-accent-soft:   #2A1906;
+  --sf-accent-text:   var(--sf-ember-100);
+
+  --sf-success:       var(--sf-moss-300);
+  --sf-success-soft:  #1F2A14;
+  --sf-success-text:  var(--sf-moss-100);
+
+  --sf-danger-soft:   #2A0F0F;
+  --sf-warning-soft:  #2A1E0A;
+  --sf-info-soft:     #0A1E2E;
+
+  --sf-logo-bg:       var(--sf-anvil-800);
+  --sf-logo-s:        var(--sf-ember-500);
+  --sf-logo-f:        #F5F5F5;
+
+  --sf-focus-ring:    0 0 0 3px rgba(245, 160, 90, 0.35);
+  --sf-shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.3);
+  --sf-shadow-md:     0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+
+/* --------------------------------------------------------------------------
+   7. Base reset & body
+   -------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  font-family: var(--sf-font-sans);
+  font-size: var(--sf-text-base);
+  line-height: var(--sf-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Component classes — drop-in building blocks
+   -------------------------------------------------------------------------- */
+
+/* -- Buttons ------------------------------------------------------------- */
+.sf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-2);
+  padding: var(--sf-space-2) var(--sf-space-4);
+  border-radius: var(--sf-radius-md);
+  border: var(--sf-border-thin) solid transparent;
+  font-family: inherit;
+  font-size: var(--sf-text-base);
+  font-weight: var(--sf-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--sf-transition-fast),
+              border-color var(--sf-transition-fast),
+              color var(--sf-transition-fast);
+  text-decoration: none;
+}
+.sf-btn:focus-visible { outline: none; box-shadow: var(--sf-focus-ring); }
+.sf-btn:active { transform: scale(0.98); }
+
+.sf-btn-primary {
+  background: var(--sf-accent);
+  color: var(--sf-text-inverse);
+  border-color: var(--sf-accent);
+}
+.sf-btn-primary:hover { background: var(--sf-accent-hover); border-color: var(--sf-accent-hover); }
+
+.sf-btn-secondary {
+  background: transparent;
+  color: var(--sf-accent);
+  border-color: var(--sf-accent);
+}
+.sf-btn-secondary:hover { background: var(--sf-accent-soft); }
+
+.sf-btn-ghost {
+  background: var(--sf-surface-alt);
+  color: var(--sf-text);
+  border-color: var(--sf-border);
+}
+.sf-btn-ghost:hover { background: var(--sf-surface-sunk); border-color: var(--sf-border-strong); }
+
+.sf-btn-danger {
+  background: transparent;
+  color: var(--sf-danger);
+  border-color: var(--sf-danger);
+}
+.sf-btn-danger:hover { background: var(--sf-danger-soft); }
+
+
+/* -- Inputs -------------------------------------------------------------- */
+.sf-input,
+.sf-select,
+.sf-textarea {
+  width: 100%;
+  padding: var(--sf-space-2) var(--sf-space-3);
+  background: var(--sf-surface);
+  color: var(--sf-text);
+  border: var(--sf-border-thin) solid var(--sf-border);
+  border-radius: var(--sf-radius-md);
+  font-family: inherit;
+  font-size: var(--sf-text-base);
+  line-height: var(--sf-leading-normal);
+  transition: border-color var(--sf-transition-fast);
+}
+.sf-input:hover,
+.sf-select:hover,
+.sf-textarea:hover { border-color: var(--sf-border-strong); }
+.sf-input:focus,
+.sf-select:focus,
+.sf-textarea:focus { outline: none; border-color: var(--sf-accent); box-shadow: var(--sf-focus-ring); }
+
+
+/* -- Cards --------------------------------------------------------------- */
+.sf-card {
+  background: var(--sf-surface);
+  border: var(--sf-border-thin) solid var(--sf-border);
+  border-radius: var(--sf-radius-lg);
+  padding: var(--sf-space-5) var(--sf-space-6);
+}
+.sf-card-accent {
+  border-left: var(--sf-border-thick) solid var(--sf-accent);
+  border-radius: 0 var(--sf-radius-lg) var(--sf-radius-lg) 0;
+  padding-left: calc(var(--sf-space-6) - 2px);
+}
+
+
+/* -- Badges -------------------------------------------------------------- */
+.sf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sf-space-1);
+  padding: 3px 10px;
+  border-radius: var(--sf-radius-pill);
+  font-size: var(--sf-text-xs);
+  font-weight: var(--sf-weight-medium);
+  line-height: var(--sf-leading-tight);
+}
+.sf-badge-accent  { background: var(--sf-accent-soft);  color: var(--sf-accent-text);  }
+.sf-badge-success { background: var(--sf-success-soft); color: var(--sf-success-text); }
+.sf-badge-danger  { background: var(--sf-danger-soft);  color: var(--sf-danger);       }
+.sf-badge-warning { background: var(--sf-warning-soft); color: var(--sf-warning);      }
+.sf-badge-neutral {
+  background: var(--sf-surface-alt);
+  color: var(--sf-text-muted);
+  border: var(--sf-border-thin) solid var(--sf-border);
+}
+
+
+/* -- App header ---------------------------------------------------------- */
+.sf-header {
+  height: 52px;
+  padding: 0 var(--sf-space-5);
+  background: var(--sf-surface);
+  border-bottom: var(--sf-border-thin) solid var(--sf-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sf-space-4);
+}
+
+.sf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sf-space-2);
+}
+.sf-brand-text {
+  font-size: var(--sf-text-md);
+  font-weight: var(--sf-weight-medium);
+  color: var(--sf-text);
+}
+.sf-brand-text em {
+  font-style: normal;
+  color: var(--sf-accent);
+}
+.sf-brand-sub {
+  font-size: var(--sf-text-sm);
+  color: var(--sf-text-muted);
+  margin-left: var(--sf-space-1);
+}
+
+
+/* -- Logo icon (pure CSS, no SVG needed for quick use) ------------------- */
+.sf-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-logo-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sf-font-serif);
+  font-style: italic;
+  font-weight: var(--sf-weight-bold);
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.sf-logo::before {
+  content: "S";
+  color: var(--sf-logo-s);
+}
+.sf-logo::after {
+  content: "F";
+  color: var(--sf-logo-f);
+  margin-left: 1px;
+}
+.sf-logo-sm { width: 20px; height: 20px; font-size: 12px; border-radius: var(--sf-radius-sm); }
+.sf-logo-lg { width: 48px; height: 48px; font-size: 28px; border-radius: var(--sf-radius-lg); }
+.sf-logo-xl { width: 80px; height: 80px; font-size: 48px; border-radius: var(--sf-radius-xl); }
+
+
+/* -- Stat metric box ---------------------------------------------------- */
+.sf-stat {
+  background: var(--sf-surface-alt);
+  border-radius: var(--sf-radius-md);
+  padding: var(--sf-space-3) var(--sf-space-4);
+}
+.sf-stat-value {
+  font-size: var(--sf-text-xl);
+  font-weight: var(--sf-weight-medium);
+  color: var(--sf-text);
+  line-height: var(--sf-leading-tight);
+}
+.sf-stat-label {
+  font-size: var(--sf-text-xs);
+  color: var(--sf-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.sf-stat-accent .sf-stat-value  { color: var(--sf-accent); }
+.sf-stat-success .sf-stat-value { color: var(--sf-success); }
+
+
+/* -- Utility classes ----------------------------------------------------- */
+.sf-text-muted  { color: var(--sf-text-muted); }
+.sf-text-subtle { color: var(--sf-text-subtle); }
+.sf-text-accent { color: var(--sf-accent); }
+.sf-divider     { border: none; border-top: var(--sf-border-thin) solid var(--sf-border); margin: var(--sf-space-5) 0; }
