@@ -1454,7 +1454,19 @@ async function showDiscovery(artistId, artistName) {
       }
       results.appendChild(card);
     });
-  } catch (err) { results.innerHTML = `<p style="color:var(--danger);padding:20px">Fehler: ${escHtml(err.message)}</p>`; }
+  } catch (err) {
+    const isForbidden = err.message?.includes('Forbidden') || err.message?.includes('403');
+    if (isForbidden) {
+      results.innerHTML = `
+        <div style="padding:20px;text-align:center">
+          <p style="font-size:1.5rem;margin:0 0 8px">🔒</p>
+          <p style="color:var(--text);font-weight:600;margin:0 0 6px">${I18N.t('discovery_forbidden_title')}</p>
+          <p style="color:var(--text2);font-size:0.85rem;margin:0">${I18N.t('discovery_forbidden_body')}</p>
+        </div>`;
+    } else {
+      results.innerHTML = `<p style="color:var(--danger);padding:20px">Fehler: ${escHtml(err.message)}</p>`;
+    }
+  }
 }
 
 // ── FULLSCREEN ────────────────────────────────────────────────────────────────

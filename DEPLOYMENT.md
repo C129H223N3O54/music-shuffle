@@ -1,179 +1,111 @@
-# 🚀 Deployment Guide
+# 🚀 Deployment — Music Shuffle
 
-Artist Shuffle is a **pure static web app** — no backend, no build step, no database.
-Just serve the files over HTTPS and you're done.
-
----
-
-## Requirements
-
-- Any web server capable of serving static files
-- **HTTPS** — required by Spotify OAuth (exception: `http://localhost` for local dev)
-- A valid SSL certificate (Let's Encrypt is free and widely supported)
+Anleitung zum Deployen von Music Shuffle auf einer Synology NAS.
 
 ---
 
-## General Setup
+## Voraussetzungen
 
-### 1. Upload files
+- Synology NAS mit DSM 7.x
+- Web Station installiert
+- HTTPS-Zertifikat (Let's Encrypt über DSM oder eigenes)
+- Reverse Proxy in DSM eingerichtet
 
-Copy these files to your web server's document root (or a subdirectory):
+---
+
+## Schritt 1 — Dateien hochladen
+
+Lade alle Dateien in das Web-Verzeichnis der NAS:
 
 ```
-index.html
-style.css
-app.js
-spotify-api.js
-config.js          ← create from config.example.js
-manifest.json
-service-worker.js
-favicon.svg
-favicon.ico
-icons/
+/volume1/web/music-shuffle/
+├── index.html
+├── style.css
+├── sideforge-tokens.css
+├── app.js
+├── spotify-api.js
+├── i18n.js
+├── config.js               ← selbst anlegen (nicht im Repo!)
+├── config.example.js
+├── manifest.json
+├── service-worker.js
+├── favicon.svg
+├── favicon.ico
+└── icons/
+    ├── icon-96.png
+    ├── icon-128.png
+    ├── icon-192.png
+    └── icon-512.png
 ```
 
-Do **not** upload `config.example.js`, `sync-server/`, `README.md`, etc. to production — only the files listed above are needed to run the app.
+---
 
-### 2. Create config.js
+## Schritt 2 — config.js anlegen
+
+Kopiere `config.example.js` zu `config.js` und trage deine Werte ein:
 
 ```javascript
 window.SPOTIFY_CONFIG = {
-    clientId: 'YOUR_CLIENT_ID',
-    redirectUri: 'https://your-domain.com/',      // trailing slash required
-    syncUrl: null,                                  // optional
+    clientId:   'DEINE_SPOTIFY_CLIENT_ID',
+    redirectUri: 'https://deine-domain.de/music-shuffle/',
+    syncUrl:    'https://sync.deine-domain.de',  // optional
+    syncStats:  true,                             // optional
 };
 ```
 
-### 3. Set Redirect URI in Spotify Dashboard
+---
 
-Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) → your app → Settings → add:
+## Schritt 3 — Reverse Proxy einrichten
 
-```
-https://your-domain.com/
-```
+**DSM → Systemsteuerung → Anmeldeportal → Reverse Proxy → Erstellen:**
 
-> The URI must **exactly** match `redirectUri` in `config.js` — including the trailing slash and protocol.
+| Feld | Wert |
+|------|------|
+| Name | Music Shuffle |
+| Quelle Protokoll | HTTPS |
+| Quelle Hostname | `deine-domain.de` |
+| Quelle Port | `8443` |
+| Quelle Pfad | `/music-shuffle/` |
+| Ziel Protokoll | HTTP |
+| Ziel Hostname | `127.0.0.1` |
+| Ziel Port | `80` |
 
 ---
 
-## Platform-Specific Notes
+## Schritt 4 — Sync-Server einrichten (optional)
 
-### Apache
+Siehe [sync-server/SYNC-SERVER.md](sync-server/SYNC-SERVER.md) für die vollständige Anleitung.
 
-No special configuration needed. If you serve from a subdirectory (e.g. `/artist-shuffle/`), update `redirectUri` and `manifest.json` `start_url` accordingly.
-
-Optional `.htaccess` for correct MIME types:
-
-```apache
-AddType application/javascript .js
-AddType text/css .css
-AddType image/svg+xml .svg
-```
-
-### Nginx
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name your-domain.com;
-
-    root /var/www/artist-shuffle;
-    index index.html;
-
-    # Correct MIME types
-    include /etc/nginx/mime.types;
-
-    # Cache static assets
-    location ~* \.(js|css|png|svg|ico|json)$ {
-        expires 1d;
-        add_header Cache-Control "public";
-    }
-}
-```
-
-### Caddy
-
-```caddyfile
-your-domain.com {
-    root * /var/www/artist-shuffle
-    file_server
-    encode gzip
-}
-```
-
-Caddy handles HTTPS automatically with Let's Encrypt.
-
-### GitHub Pages
-
-1. Push the project to a GitHub repository
-2. Go to **Settings → Pages → Source → Deploy from branch**
-3. Select `main` branch, root folder
-4. Your app will be at `https://yourusername.github.io/artist-shuffle/`
-5. Update `redirectUri` and `manifest.json` `start_url` to match
-
-### Netlify
-
-1. Drag and drop the project folder to [netlify.com/drop](https://app.netlify.com/drop)
-2. Or connect your GitHub repo for automatic deploys
-3. HTTPS is included automatically
-4. Update `config.js` with your Netlify domain
-
-### Vercel
+Kurzfassung per SSH:
 
 ```bash
-npm i -g vercel
-vercel deploy
+cd /volume1/docker/artist-shuffle-sync
+sudo docker build -t artist-shuffle-sync:latest .
+sudo docker run -d \
+  --name artist-shuffle-sync \
+  --restart always \
+  -p 3001:3001 \
+  -v /volume1/docker/artist-shuffle-sync/data:/data \
+  artist-shuffle-sync:latest
 ```
 
-### Synology NAS
+---
 
-See the detailed step-by-step guide in [SYNOLOGY.md](SYNOLOGY.md) if you're hosting on a Synology NAS with Web Station and Reverse Proxy.
+## Schritt 5 — Testen
+
+1. App-URL im Browser öffnen: `https://deine-domain.de/music-shuffle/`
+2. Mit Spotify einloggen
+3. Artists hinzufügen und shufflen 🎲
 
 ---
 
-## Subdirectory Deployment
+## Updates einspielen
 
-If you deploy to a subdirectory (e.g. `https://your-domain.com/shuffle/`):
-
-1. **`config.js`** — set `redirectUri: 'https://your-domain.com/shuffle/'`
-2. **`manifest.json`** — update `start_url` and `scope` to `/shuffle/`
-3. **`service-worker.js`** — update `STATIC_ASSETS` paths to include `/shuffle/` prefix
-4. **Spotify Dashboard** — add `https://your-domain.com/shuffle/` as Redirect URI
+1. Neue Dateien per File Station hochladen (vorhandene ersetzen)
+2. `config.js` nicht überschreiben — sie liegt in `.gitignore`
+3. Browser-Cache leeren: **F12 → Application → Storage → Clear site data**
+4. Bei Sync-Server Änderungen: Image neu bauen + Container neu erstellen
 
 ---
 
-## Updating the App
-
-When you upload new versions of `app.js`, `style.css`, or other files, bump the Service Worker cache version so users get the fresh files:
-
-In `service-worker.js`, change:
-```javascript
-const CACHE_NAME = 'artist-shuffle-v2';
-// to:
-const CACHE_NAME = 'artist-shuffle-v3';
-```
-
-Upload the updated `service-worker.js` — browsers will detect the change and clear the old cache automatically.
-
----
-
-## SSL / HTTPS
-
-If your server doesn't have SSL yet, the easiest options are:
-
-- **Let's Encrypt** — free, auto-renewing, supported by most servers and control panels
-- **Cloudflare** — free proxy + SSL, just change your nameservers
-- **Netlify / Vercel / GitHub Pages** — SSL included automatically
-
----
-
-## Optional: Cross-Device Sync Server
-
-To sync your artist lists across devices, deploy the optional sync server.
-See [sync-server/SYNC-SERVER.md](sync-server/SYNC-SERVER.md) for Docker-based setup instructions.
-
-After deploying the sync server, update `config.js`:
-
-```javascript
-syncUrl: 'https://sync.your-domain.com',
-```
+*Erstellt für Music Shuffle — MIT License*

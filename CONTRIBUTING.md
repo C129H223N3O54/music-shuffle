@@ -1,68 +1,86 @@
-# Contributing to Artist Shuffle
+# 🤝 Contributing — Music Shuffle
 
-Thanks for your interest! 🎲
+Danke für dein Interesse an Music Shuffle! Hier sind die Richtlinien für Beiträge.
 
-## Philosophy
+---
 
-- **Vanilla JS only** — no framework, no build step, no `node_modules` in the browser
-- **Personal use focus** — features should work within Spotify's Development Mode limits
-- **Simple over clever** — readable code beats clever one-liners
+## Grundregeln
 
-## Getting Started
+- **Vanilla JS** — kein Framework, kein Build-Schritt, keine npm-Abhängigkeiten
+- **Sideforge Design System** — alle UI-Änderungen nutzen `sideforge-tokens.css` Variablen
+- **Keine externen Abhängigkeiten** — die App ist komplett statisch und selbst gehostet
+- **Bilingual** — alle neuen UI-Strings in `i18n.js` auf Deutsch und Englisch
 
-```bash
-git clone https://github.com/yourusername/artist-shuffle.git
-cd artist-shuffle
-cp config.example.js config.js
-# Add your Spotify Client ID to config.js
-python3 -m http.server 8080
-```
+---
 
-## File Responsibilities
+## Design System
 
-| File | Purpose |
-|------|---------|
-| `app.js` | UI, state management, all event handling |
-| `spotify-api.js` | Spotify API calls only — no UI code here |
-| `style.css` | All styles — use CSS variables from `:root` |
-| `index.html` | Structure only |
-| `service-worker.js` | PWA caching — bump `CACHE_NAME` version on changes |
+Music Shuffle nutzt das [Sideforge Design System](https://github.com/C129H223N3O54/SideForge).
 
-## Code Style
+Farb-Tokens:
+- Accent: `var(--accent)` / `var(--sf-ember-300)` — Ember Orange
+- Backgrounds: `var(--bg)` bis `var(--bg5)` — Anvil Warm Grays
+- Text: `var(--text)`, `var(--text2)`, `var(--text3)`
+- Border: `var(--border)`
 
-- ES6+ (async/await, arrow functions, template literals, optional chaining)
-- 2-space indentation
-- Section headers: `// ── SECTION NAME ──────────`
-- No semicolons (consistent with existing code)
+Schrift: **Verdana** — kein Webfont, keine externen Requests.
 
-## Spotify API Constraints
+---
 
-The app targets **Development Mode** — these endpoints are restricted and should not be used:
+## Dateistruktur
 
-- ❌ `/audio-features` — energy, BPM, instrumentalness
-- ❌ `/me/tracks` — like/save tracks
-- ❌ `/me/top/tracks` and `/me/top/artists`
-- ❌ `/recommendations`
+| Datei | Zweck |
+|-------|-------|
+| `app.js` | App-Logik, UI, Player, State |
+| `spotify-api.js` | Spotify API Wrapper + OAuth PKCE |
+| `i18n.js` | Übersetzungen DE/EN |
+| `style.css` | Alle Styles (nutzt Sideforge-Tokens) |
+| `sideforge-tokens.css` | Design System Tokens |
+| `sync-server.js` | Optionaler Node.js Sync-Server |
 
-These work fine:
+---
 
-- ✅ `/artists/{id}/albums`
-- ✅ `/albums/{id}/tracks`
-- ✅ `/search`
-- ✅ `/artists/{id}/related-artists`
-- ✅ Web Playback SDK (Premium required)
-- ✅ `/me/player/*` — playback control
+## Neue Features
 
-## Submitting a PR
+1. Fork erstellen
+2. Feature in `app.js` / `spotify-api.js` implementieren
+3. UI-Strings in `i18n.js` ergänzen (DE + EN)
+4. Styles in `style.css` mit Sideforge-Tokens
+5. Changelog-Eintrag in `CHANGELOG.md`
+6. Pull Request erstellen
 
-1. Fork → feature branch → PR
-2. Describe what changed and why
-3. Test with a real Spotify Premium account
+---
 
-## Reporting Bugs
+## Sync-Server Endpunkte
 
-Open an issue with:
-- Browser + OS
-- Steps to reproduce
-- Console errors (F12)
-- Expected vs actual behavior
+| Endpunkt | Methode | Zweck |
+|----------|---------|-------|
+| `/api/lists` | GET, POST, DELETE | Artist-Listen |
+| `/api/stats` | GET, POST | Wiedergabe-Statistiken |
+| `/api/blacklist` | GET, POST | Gesperrte Tracks |
+| `/api/cache` | GET, POST | Album-Cache |
+| `/api/health` | GET | Status-Check |
+
+---
+
+## Bekannte Einschränkungen
+
+| Feature | Status |
+|---------|--------|
+| Ähnliche Artists (Discovery) | ❌ Von Spotify im Dev Mode gesperrt |
+| Like-Button | ❌ Extended Quota erforderlich |
+| Audio Features (BPM, Energy) | ❌ Extended Quota erforderlich |
+| iOS Web Playback | ❌ Web Playback SDK läuft nicht auf iOS Safari |
+
+---
+
+## Versionierung
+
+Music Shuffle folgt [Semantic Versioning](https://semver.org/):
+- **Major** (x.0.0) — Breaking Changes
+- **Minor** (1.x.0) — Neue Features
+- **Patch** (1.1.x) — Bugfixes, kleine Verbesserungen
+
+---
+
+*MIT License — Idee & Richtung: Jan Erik Mueller — Code: Claude (Anthropic)*
