@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
+
+---
+
 ## [1.4.2] — 2026-06-18 — Token Handling & Fixes
 
 ### Changed
@@ -158,6 +173,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
+
+---
+
 ## [1.4.2] — 2026-06-18 — Token Handling & Fixes
 
 ### Changed
@@ -298,6 +328,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each artist and album has equal chance of being picked (1 entry each in pool)
 - Artists with more albums naturally provide more variety when selected
 - Smart Shuffle still applies — artists not played recently get higher weight
+
+---
+
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
 
 ---
 
@@ -460,6 +505,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
+
+---
+
 ## [1.4.2] — 2026-06-18 — Token Handling & Fixes
 
 ### Changed
@@ -595,6 +655,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Artist grid switched from 3 to 2 columns — larger images, more breathing room
+
+---
+
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
 
 ---
 
@@ -735,6 +810,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Artist cards no longer shrink with many artists — fixed size with scrollbar
 - Year filters were always active even when empty
+
+---
+
+## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
+
+### Added
+- **Compact list dropdown** — clicking the list name now opens a slim dropdown positioned right below it, instead of a full-width bottom sheet. Each entry shows its item count (artists + albums). Click outside to close.
+- **Compact options menu** — the three-dot options button (rename, duplicate, merge, export, import, delete) now opens a compact right-aligned dropdown instead of a full-width sheet
+- **Combined list counter** — the count next to the list name now includes both artists and albums (was artists only)
+
+### Changed
+- **`market` parameter** — API requests now use the account's actual country code (fetched from `/me` and cached) instead of the deprecated `market=from_token`, which Spotify has begun rejecting with HTTP 400
+
+### Removed
+- **Genre shuffle** — Spotify has restricted track search (`type=track`) for Development Mode apps without Extended Quota. Requests return HTTP 400 with a misleading `"Invalid limit"` message; the real cause is missing catalog access for personal apps. As with the "Similar Artists" feature removed in v1.4.0, this is a deliberate Spotify platform restriction and cannot be fixed on our end. The genre search field and genre-based shuffling have been removed. Existing genre entries in lists are preserved as data but ignored.
 
 ---
 

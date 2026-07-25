@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════
-   MUSIC SHUFFLE — app.js  v1.4.2
+   MUSIC SHUFFLE — app.js  v1.5.0
    ═══════════════════════════════════════════════════════ */
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.5.0';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -536,8 +536,9 @@ function renderLists() {
   const active   = getActiveList();
   const nameText = document.getElementById('list-name-text');
   if (nameText) {
+    const count = (active?.artists?.length || 0) + (active?.albums?.length || 0);
     nameText.textContent = active
-      ? `${active.name} (${active.artists?.length || 0})`
+      ? `${active.name} (${count})`
       : I18N.t('list_none');
   }
 }
@@ -858,7 +859,10 @@ function renderAlbumGrid() {
 let _allGenres = [];
 
 async function loadGenres() {
-  if (!_allGenres.length) _allGenres = SpotifyAPI.getAvailableGenres();
+  // Genre-Feature entfernt — getAvailableGenres existiert nicht mehr
+  if (!_allGenres.length && typeof SpotifyAPI.getAvailableGenres === 'function') {
+    _allGenres = SpotifyAPI.getAvailableGenres();
+  }
   return _allGenres;
 }
 
@@ -1141,7 +1145,7 @@ function _buildPool(list) {
     for (let i = 0; i < 5; i++) pool.push({ type: 'artist', data: a });
   });
   (list.albums  || []).forEach(a => pool.push({ type: 'album',  data: a }));
-  (list.genres  || []).forEach(g => pool.push({ type: 'genre',  data: g }));
+  // Genre-Shuffle entfernt — Spotify blockiert die Track-Suche (type=track) für Dev-Mode-Apps
   return pool;
 }
 
@@ -1186,9 +1190,7 @@ async function doShuffle() {
   try {
     let track = null;
 
-    if (picked.type === 'genre') {
-      track = await SpotifyAPI.getRandomTrackByGenre(picked.data, filters, blacklistSet);
-    } else if (picked.type === 'album') {
+    if (picked.type === 'album') {
       track = await SpotifyAPI.getRandomTrackFromAlbum(picked.data.id, picked.data, blacklistSet, State.historyIds, State.onlyNew);
       if (track) State.shuffleLog.unshift({ trackName: track.name, artistName: picked.data.artistName, reason: '💿 Album', ts: Date.now() });
     } else {
@@ -1867,28 +1869,34 @@ function bindAllEvents() {
   backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('visible'); });
 
   // List name display
-  document.getElementById('list-name-display')?.addEventListener('click', () => {
-    const sheet = document.getElementById('sheet-list-picker');
-    const items = document.getElementById('sheet-list-items');
-    items.innerHTML = '';
+  document.getElementById('list-name-display')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const dd = document.getElementById('list-dropdown');
+    if (!dd.classList.contains('hidden')) { dd.classList.add('hidden'); return; }
+    dd.innerHTML = '';
     State.lists.forEach(list => {
+      const count = (list.artists?.length || 0) + (list.albums?.length || 0);
       const btn = document.createElement('button');
-      btn.className   = 'btn-menu-item' + (list.id === State.activeListId ? ' active' : '');
-      btn.textContent = list.name + (list.artists?.length ? ` (${list.artists.length})` : '');
-      btn.style.fontWeight = list.id === State.activeListId ? '700' : '400';
-      btn.addEventListener('click', () => {
+      btn.className = 'list-dropdown-item' + (list.id === State.activeListId ? ' active' : '');
+      btn.innerHTML = `<span>${escHtml(list.name)}</span>${count ? `<span class="list-dropdown-count">${count}</span>` : ''}`;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         State.activeListId = list.id;
         document.getElementById('list-select').value = list.id;
         localStorage.setItem('as_active_list', list.id);
-        sheet.classList.add('hidden');
+        dd.classList.add('hidden');
         renderLists(); renderArtistGrid(); renderAlbumGrid(); renderGenreTags(); updateFiltersUI();
       });
-      items.appendChild(btn);
+      dd.appendChild(btn);
     });
-    sheet.classList.remove('hidden');
+    dd.classList.remove('hidden');
   });
-  document.getElementById('sheet-list-picker')?.addEventListener('click', e => {
-    if (e.target === document.getElementById('sheet-list-picker')) document.getElementById('sheet-list-picker').classList.add('hidden');
+  // Klick außerhalb schließt das Dropdown
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('list-dropdown');
+    if (dd && !dd.classList.contains('hidden') && !dd.contains(e.target) && !document.getElementById('list-name-display').contains(e.target)) {
+      dd.classList.add('hidden');
+    }
   });
 
   // List select
@@ -1906,15 +1914,24 @@ function bindAllEvents() {
   document.getElementById('new-list-name').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('confirm-new-list').click(); if (e.key === 'Escape') document.getElementById('cancel-new-list').click(); });
 
   // List options bottom sheet
-  const listOptionsSheet = document.getElementById('modal-list-options');
+  const listOptionsSheet = document.getElementById('list-options-dropdown');
   const openSheet  = () => listOptionsSheet.classList.remove('hidden');
   const closeSheet = () => listOptionsSheet.classList.add('hidden');
 
-  document.getElementById('list-options-btn').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); openSheet(); });
-  document.getElementById('close-list-options')?.addEventListener('click', closeSheet);
-  document.getElementById('close-list-options')?.addEventListener('touchend', e => { e.preventDefault(); closeSheet(); });
-  listOptionsSheet?.addEventListener('touchend', e => { if (e.target === listOptionsSheet) closeSheet(); });
-  listOptionsSheet?.querySelectorAll('.btn-menu-item').forEach(btn => { btn.addEventListener('touchend', e => { e.preventDefault(); btn.click(); }); });
+  document.getElementById('list-options-btn').addEventListener('click', e => {
+    e.stopPropagation(); e.preventDefault();
+    // Listen-Dropdown schließen falls offen
+    document.getElementById('list-dropdown')?.classList.add('hidden');
+    listOptionsSheet.classList.toggle('hidden');
+  });
+  // Klick außerhalb schließt das Optionen-Dropdown
+  document.addEventListener('click', (e) => {
+    if (!listOptionsSheet.classList.contains('hidden')
+        && !listOptionsSheet.contains(e.target)
+        && !document.getElementById('list-options-btn').contains(e.target)) {
+      listOptionsSheet.classList.add('hidden');
+    }
+  });
 
   // Rename
   document.getElementById('rename-list-btn').addEventListener('click', () => {
@@ -2191,6 +2208,39 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.5.0',
+    date: '2026-06-19',
+    label: { de: 'Kompakte Menüs & API-Anpassungen', en: 'Compact Menus & API Fixes' },
+    added: {
+      de: [
+        'Kompaktes Listen-Dropdown — Klick auf den Listennamen öffnet ein schlankes Dropdown direkt darunter statt eines Sheets über die volle Breite',
+        'Kompaktes Optionen-Menü — die drei Punkte öffnen jetzt ebenfalls ein kompaktes Dropdown',
+        'Listen-Zähler zeigt Artists + Alben zusammen (vorher nur Artists)',
+      ],
+      en: [
+        'Compact list dropdown — clicking the list name opens a slim dropdown right below it instead of a full-width sheet',
+        'Compact options menu — the three-dot button now also opens a compact dropdown',
+        'List counter shows artists + albums combined (was artists only)',
+      ],
+    },
+    changed: {
+      de: [
+        'market-Parameter — nutzt jetzt den echten Ländercode des Accounts statt des abgekündigten "from_token" (verursachte HTTP 400)',
+      ],
+      en: [
+        'market parameter — now uses the account\'s actual country code instead of the deprecated "from_token" (was causing HTTP 400)',
+      ],
+    },
+    removed: {
+      de: [
+        'Genre-Shuffle entfernt — Spotify hat die Track-Suche (type=track) für Development-Mode-Apps ohne Extended Quota gesperrt (HTTP 400 "Invalid limit" = fehlender Katalog-Zugriff). Wie schon bei "Ähnliche Artists" eine bewusste Spotify-Einschränkung, kein App-Fehler',
+      ],
+      en: [
+        'Genre shuffle removed — Spotify has restricted track search (type=track) for Development Mode apps without Extended Quota (HTTP 400 "Invalid limit" = missing catalog access). Like "Similar Artists" before, this is a deliberate Spotify restriction, not an app bug',
+      ],
+    },
+  },
   {
     version: '1.4.2',
     date: '2026-06-18',

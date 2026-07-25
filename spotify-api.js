@@ -21,6 +21,7 @@ const SpotifyAPI = (() => {
 
   let _accessToken = null, _tokenExpiry = 0, _refreshToken = null;
   let _clientId = null, _redirectUri = null, _lastRequest = 0;
+  let _userMarket = localStorage.getItem('as_market') || 'DE'; // Fallback DE
   const _albumCache = new Map();
   const _trackCache = new Map(); // albumId → { tracks: [...], ts }
 
@@ -205,7 +206,7 @@ const SpotifyAPI = (() => {
   async function _getCachedTracks(albumId, albumData) {
     const cached = _trackCache.get(albumId);
     if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.tracks;
-    const data = await _fetch(`/albums/${albumId}/tracks?limit=50&market=from_token`).catch(()=>null);
+    const data = await _fetch(`/albums/${albumId}/tracks?limit=50&market=${_userMarket}`).catch(()=>null);
     if (!data?.items?.length) return [];
     const tracks = _enrichTracks(data.items, albumData);
     const entry = { tracks, ts: Date.now() };
@@ -326,7 +327,11 @@ const SpotifyAPI = (() => {
   }
 
   // ── PUBLIC ────────────────────────────────────────────
-  async function getMe()               { return _fetch('/me'); }
+  async function getMe() {
+    const me = await _fetch('/me');
+    if (me?.country) { _userMarket = me.country; localStorage.setItem('as_market', me.country); }
+    return me;
+  }
   async function getArtistAlbums(id, limit=10, offset=0) {
     return (await _fetch(`/artists/${id}/albums?include_groups=album,single&limit=${limit}&offset=${offset}`))?.items || [];
   }
@@ -362,7 +367,12 @@ const SpotifyAPI = (() => {
     if (!albums.length) return null;
     // Alle gespielten Tracks dieses Artists sperren — erst resetten wenn Diskografie erschöpft
     const playedForArtist = new Set(artistTrackHistory[artistId] || []);
-    const candidates = [...albums].sort(()=>Math.random()-0.5).slice(0,5);
+    // Alben in zufälliger Reihenfolge. Dank Track-Cache sind die meisten Treffer kostenlos,
+    // daher können wir die gesamte Diskografie durchgehen statt nur 5 Alben (verhindert
+    // "Kein passender Track gefunden" bei filter-intensiven Listen).
+    const shuffledAlbums = [...albums].sort(()=>Math.random()-0.5);
+    // Sicherheitslimit gegen extrem große Diskografien — genug Alben um fast immer einen Treffer zu finden
+    const candidates = shuffledAlbums.slice(0, 25);
 
     // Erst mit Sperre versuchen
     for (const album of candidates) {
@@ -392,7 +402,7 @@ const SpotifyAPI = (() => {
   async function getArtistAlbumsFull(artistId) { return _getCachedAlbums(artistId); }
 
   async function getRandomTrackFromAlbum(albumId, albumData, blacklist=new Set(), history=new Set(), onlyNew=false) {
-    const data = await _fetch(`/albums/${albumId}/tracks?limit=50&market=from_token`).catch(()=>null);
+    const data = await _fetch(`/albums/${albumId}/tracks?limit=50&market=${_userMarket}`).catch(()=>null);
     if (!data?.items?.length) return null;
     let tracks = _applyFilters(_enrichTracks(data.items, albumData), {}, blacklist);
     if (onlyNew) { const f=tracks.filter(t=>!history.has(t.id)); if(f.length) tracks=f; }
@@ -400,53 +410,14 @@ const SpotifyAPI = (() => {
     return tracks[Math.floor(Math.random()*tracks.length)];
   }
 
-  async function getRandomTrackByGenre(genre, filters={}, blacklist=new Set()) {
-    const offset = Math.floor(Math.random()*100);
-    const data = await _fetch(`/search?q=${encodeURIComponent(`genre:${genre}`)}&type=track&limit=10&offset=${offset}&market=from_token`).catch(()=>null);
-    let tracks = (data?.tracks?.items||[]).map(t=>({...t, albumArt: t.album?.images?.[0]?.url||''}));
-    tracks = _applyFilters(tracks, filters, blacklist);
-    if (!tracks.length) return null;
-    return tracks[Math.floor(Math.random()*tracks.length)];
-  }
-
-  function getAvailableGenres() {
-    return [
-      'acoustic','afrobeat','alt-rock','alternative','ambient','anime',
-      'black-metal','bluegrass','blues','bossanova','brazil','breakbeat',
-      'british','cantopop','chicago-house','children','chill','classical',
-      'club','comedy','country','dance','dancehall','death-metal','deep-house',
-      'detroit-techno','disco','disney','drum-and-bass','dub','dubstep',
-      'edm','electro','electronic','emo','folk','forro','french','funk',
-      'garage','german','gospel','goth','grindcore','groove','grunge',
-      'guitar','happy','hard-rock','hardcore','hardstyle','heavy-metal',
-      'hip-hop','holidays','honky-tonk','house','idm','indian','indie',
-      'indie-pop','industrial','iranian','j-dance','j-idol','j-pop','j-rock',
-      'jazz','k-pop','kids','latin','latino','malay','mandopop','metal',
-      'metal-misc','metalcore','minimal-techno','movies','mpb','new-age',
-      'new-release','opera','pagode','party','philippines-opm','piano','pop',
-      'pop-film','post-dubstep','power-pop','progressive-house','psych-rock',
-      'punk','punk-rock','r-n-b','rainy-day','reggae','reggaeton','road-trip',
-      'rock','rock-n-roll','rockabilly','romance','sad','salsa','samba',
-      'sertanejo','show-tunes','singer-songwriter','ska','sleep','songwriter',
-      'soul','soundtracks','spanish','study','summer','swedish','synth-pop',
-      'tango','techno','trance','trip-hop','turkish','work-out','world-music',
-      'power-metal','folk-metal','symphonic-metal','viking-metal','doom-metal',
-      'speed-metal','thrash-metal','progressive-metal','nu-metal','glam-metal',
-      'melodic-death-metal','atmospheric-black-metal','post-rock','math-rock',
-      'shoegaze','dream-pop','lo-fi','vaporwave','synthwave','retrowave',
-      'darkwave','coldwave','new-wave','post-punk','gothic-rock','noise-rock',
-      'stoner-rock','desert-rock','krautrock','space-rock','psychedelic-rock',
-      'garage-rock','surf-rock','classic-rock','blues-rock','southern-rock',
-      'country-rock','americana','outlaw-country','traditional-country',
-    ];
-  }
+  // Genre-Shuffle entfernt — Spotify blockiert die Track-Suche (type=track) für
+  // Dev-Mode-Apps ohne Extended Quota (HTTP 400 "Invalid limit" = fehlender Katalog-Zugriff).
 
   return {
     init, startLogin, handleCallback, logout, isLoggedIn, getToken,
     getMe, searchArtists, getArtistAlbums,
     getDevices, playTrack, setVolume, seek, transferPlayback, setRepeat,
     getRandomTrack, getArtistAlbumsFull, getRandomTrackFromAlbum,
-    getRandomTrackByGenre, getAvailableGenres,
     setServerCacheUrl, loadServerCache, loadServerTrackCache,
   };
 
