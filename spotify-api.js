@@ -328,9 +328,9 @@ const SpotifyAPI = (() => {
 
   // ── PUBLIC ────────────────────────────────────────────
   async function getMe() {
-    const me = await _fetch('/me');
-    if (me?.country) { _userMarket = me.country; localStorage.setItem('as_market', me.country); }
-    return me;
+    // Hinweis: Seit Feb 2026 liefert /me kein country/email/product mehr.
+    // Der Marktcode kommt daher aus localStorage (as_market) mit Fallback DE.
+    return _fetch('/me');
   }
   async function getArtistAlbums(id, limit=10, offset=0) {
     return (await _fetch(`/artists/${id}/albums?include_groups=album,single&limit=${limit}&offset=${offset}`))?.items || [];
@@ -367,35 +367,40 @@ const SpotifyAPI = (() => {
     if (!albums.length) return null;
     // Alle gespielten Tracks dieses Artists sperren — erst resetten wenn Diskografie erschöpft
     const playedForArtist = new Set(artistTrackHistory[artistId] || []);
-    // Alben in zufälliger Reihenfolge. Dank Track-Cache sind die meisten Treffer kostenlos,
-    // daher können wir die gesamte Diskografie durchgehen statt nur 5 Alben (verhindert
-    // "Kein passender Track gefunden" bei filter-intensiven Listen).
-    const shuffledAlbums = [...albums].sort(()=>Math.random()-0.5);
-    // Sicherheitslimit gegen extrem große Diskografien — genug Alben um fast immer einen Treffer zu finden
-    const candidates = shuffledAlbums.slice(0, 25);
+    // Alben in zufälliger Reihenfolge (Sicherheitslimit gegen Riesen-Diskografien)
+    const candidates = [...albums].sort(()=>Math.random()-0.5).slice(0, 25);
 
-    // Erst mit Sperre versuchen
+    // WICHTIG: Erst ALLE Tracks aller Kandidaten-Alben sammeln, dann gleichverteilt
+    // einen Track wählen. Früher wurde erst ein Album gewählt und dann ein Track daraus —
+    // dadurch waren Singles/kurze Alben massiv überrepräsentiert (ein Track auf einer
+    // Single hatte 100% Chance, ein Track auf einem 15-Track-Album nur 1/15).
+    let allTracks = [];
     for (const album of candidates) {
       const raw = await _getCachedTracks(album.id, album);
-      if (!raw.length) continue;
-      let tracks = _applyFilters(raw, filters, blacklist);
-      if (onlyNew) { const f=tracks.filter(t=>!history.has(t.id)); if(f.length) tracks=f; }
-      if (playedForArtist.size) { const f=tracks.filter(t=>!playedForArtist.has(t.id)); if(f.length) tracks=f; }
-      if (tracks.length) return tracks[Math.floor(Math.random()*tracks.length)];
+      if (raw.length) allTracks.push(...raw);
     }
+    // Duplikate entfernen (gleicher Track auf mehreren Alben/Compilations)
+    const seen = new Set();
+    allTracks = allTracks.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
 
-    // Alle Tracks gespielt — History für diesen Artist resetten und nochmal versuchen
-    if (playedForArtist.size && artistTrackHistory[artistId]) {
+    // Filter anwenden
+    let tracks = _applyFilters(allTracks, filters, blacklist);
+    if (onlyNew) { const f = tracks.filter(t=>!history.has(t.id)); if (f.length) tracks = f; }
+
+    // Bereits gespielte Tracks dieses Artists ausschließen (Sperre)
+    if (playedForArtist.size) {
+      const f = tracks.filter(t=>!playedForArtist.has(t.id));
+      if (f.length) {
+        // Gleichverteilt aus allen ungespielten Tracks wählen
+        return f[Math.floor(Math.random()*f.length)];
+      }
+      // Alle Tracks gespielt → Diskografie erschöpft, History zurücksetzen
       console.log(`[Shuffle] Diskografie von Artist ${artistId} erschöpft — History reset`);
       artistTrackHistory[artistId] = [];
-      for (const album of candidates) {
-        const raw = await _getCachedTracks(album.id, album);
-        if (!raw.length) continue;
-        let tracks = _applyFilters(raw, filters, blacklist);
-        if (onlyNew) { const f=tracks.filter(t=>!history.has(t.id)); if(f.length) tracks=f; }
-        if (tracks.length) return tracks[Math.floor(Math.random()*tracks.length)];
-      }
     }
+
+    // Keine Sperre aktiv (oder gerade resettet) → gleichverteilt aus allen Tracks
+    if (tracks.length) return tracks[Math.floor(Math.random()*tracks.length)];
     return null;
   }
 
@@ -410,14 +415,55 @@ const SpotifyAPI = (() => {
     return tracks[Math.floor(Math.random()*tracks.length)];
   }
 
-  // Genre-Shuffle entfernt — Spotify blockiert die Track-Suche (type=track) für
-  // Dev-Mode-Apps ohne Extended Quota (HTTP 400 "Invalid limit" = fehlender Katalog-Zugriff).
+  // Genre-Shuffle — seit Feb 2026 ist limit bei /search auf max. 10 begrenzt.
+  // Die Suche selbst bleibt verfügbar; nur das zu hohe Limit (50/20) warf zuvor
+  // den irreführenden 400 "Invalid limit".
+  async function getRandomTrackByGenre(genre, filters={}, blacklist=new Set()) {
+    const tryQuery = async (q, offset=0) => {
+      const params = new URLSearchParams({ q, type: 'track', limit: '10' });
+      if (offset) params.set('offset', String(offset));
+      let data = null;
+      try {
+        data = await _fetch(`/search?${params}`);
+      } catch { return []; }
+      let tracks = (data?.tracks?.items||[]).map(t=>({...t, albumArt: t.album?.images?.[0]?.url||''}));
+      return _applyFilters(tracks, filters, blacklist);
+    };
+    // 1. genre:-Filter, verschiedene Offsets (offset+limit ≤ 1000)
+    for (const offset of [0, 40, 100, 200, 400].sort(()=>Math.random()-0.5)) {
+      const tracks = await tryQuery(`genre:${genre}`, offset);
+      if (tracks.length) return tracks[Math.floor(Math.random()*tracks.length)];
+    }
+    // 2. Fallback: Freitext (Spezial-Genres sind oft nicht im genre:-Filter)
+    for (const offset of [0, 30, 60]) {
+      const tracks = await tryQuery(genre.replace(/-/g, ' '), offset);
+      if (tracks.length) return tracks[Math.floor(Math.random()*tracks.length)];
+    }
+    return null;
+  }
+
+  function getAvailableGenres() {
+    // Statische Liste gängiger Spotify-Genres (der /recommendations/available-genre-seeds
+    // Endpunkt wurde 2024 entfernt). Für die Genre-Suche als Vorschläge.
+    return [
+      'acoustic','alternative','ambient','black-metal','blues','classical','club',
+      'country','dance','death-metal','deep-house','disco','drum-and-bass','dubstep',
+      'edm','electro','electronic','folk','folk-metal','funk','garage','gospel','goth',
+      'grindcore','groove','grunge','hard-rock','hardcore','hardstyle','heavy-metal',
+      'hip-hop','house','indie','indie-pop','industrial','jazz','k-pop','melodic-death-metal',
+      'metal','metalcore','new-age','opera','pop','pop-rock','power-metal','progressive-house',
+      'progressive-metal','psychedelic','punk','punk-rock','r-n-b','reggae','reggaeton','rock',
+      'rock-n-roll','singer-songwriter','ska','soul','soundtrack','swedish','symphonic-metal',
+      'synth-pop','techno','thrash-metal','trance','trip-hop','viking-metal',
+    ];
+  }
 
   return {
     init, startLogin, handleCallback, logout, isLoggedIn, getToken,
     getMe, searchArtists, getArtistAlbums,
     getDevices, playTrack, setVolume, seek, transferPlayback, setRepeat,
     getRandomTrack, getArtistAlbumsFull, getRandomTrackFromAlbum,
+    getRandomTrackByGenre, getAvailableGenres,
     setServerCacheUrl, loadServerCache, loadServerTrackCache,
   };
 

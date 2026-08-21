@@ -11,7 +11,7 @@ const I18N = (() => {
     de: {
       // Login
       login_title: 'Deine Musik.\nDein Shuffle.',
-      login_sub: 'Verbinde deinen Spotify-Account und shuffle durch deine liebsten Artists — ohne Algorithmus, nur deine Auswahl.',
+      login_sub: 'Verbinde deinen Spotify-Account und shuffle durch deine liebsten Artists und Genres — ohne Algorithmus, nur deine Auswahl.',
       login_client_id_label: 'Spotify Client ID',
       login_client_id_placeholder: 'z.B. abc123def456…',
       login_client_id_hint: 'App erstellen unter',
@@ -193,7 +193,7 @@ const I18N = (() => {
     en: {
       // Login
       login_title: 'Your Music.\nYour Shuffle.',
-      login_sub: 'Connect your Spotify account and shuffle through your favorite artists — no algorithm, just your picks.',
+      login_sub: 'Connect your Spotify account and shuffle through your favorite artists and genres — no algorithm, just your picks.',
       login_client_id_label: 'Spotify Client ID',
       login_client_id_placeholder: 'e.g. abc123def456…',
       login_client_id_hint: 'Create an app at',

@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════
-   MUSIC SHUFFLE — app.js  v1.5.0
+   MUSIC SHUFFLE — app.js  v1.5.1
    ═══════════════════════════════════════════════════════ */
 'use strict';
 
 // ── VERSION ───────────────────────────────────────────────────────────────────
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const State = {
@@ -536,7 +536,7 @@ function renderLists() {
   const active   = getActiveList();
   const nameText = document.getElementById('list-name-text');
   if (nameText) {
-    const count = (active?.artists?.length || 0) + (active?.albums?.length || 0);
+    const count = (active?.artists?.length || 0) + (active?.albums?.length || 0) + (active?.genres?.length || 0);
     nameText.textContent = active
       ? `${active.name} (${count})`
       : I18N.t('list_none');
@@ -1145,7 +1145,7 @@ function _buildPool(list) {
     for (let i = 0; i < 5; i++) pool.push({ type: 'artist', data: a });
   });
   (list.albums  || []).forEach(a => pool.push({ type: 'album',  data: a }));
-  // Genre-Shuffle entfernt — Spotify blockiert die Track-Suche (type=track) für Dev-Mode-Apps
+  (list.genres  || []).forEach(g => pool.push({ type: 'genre',  data: g }));
   return pool;
 }
 
@@ -1190,7 +1190,10 @@ async function doShuffle() {
   try {
     let track = null;
 
-    if (picked.type === 'album') {
+    if (picked.type === 'genre') {
+      track = await SpotifyAPI.getRandomTrackByGenre(picked.data, filters, blacklistSet);
+      if (track) State.shuffleLog.unshift({ trackName: track.name, artistName: track.artists?.[0]?.name || '—', reason: '🎸 Genre', ts: Date.now() });
+    } else if (picked.type === 'album') {
       track = await SpotifyAPI.getRandomTrackFromAlbum(picked.data.id, picked.data, blacklistSet, State.historyIds, State.onlyNew);
       if (track) State.shuffleLog.unshift({ trackName: track.name, artistName: picked.data.artistName, reason: '💿 Album', ts: Date.now() });
     } else {
@@ -1205,6 +1208,15 @@ async function doShuffle() {
     if (State.autoSkip && track.duration_ms && track.duration_ms < State.autoSkipMin * 1000) {
       showToast(`⏭️ Auto-Skip: ${Math.round(track.duration_ms/1000)}s`, 'info');
       setTimeout(() => doShuffle(), 500); return;
+    }
+
+    // Track sofort in die Sperre eintragen (nicht erst beim Abspielen via checkAndAddToHistory).
+    // Verhindert dass fillQueue oder ein schneller nächster Shuffle denselben Track nochmal zieht.
+    if (track.artistId && filters.noRepeat !== false) {
+      if (!State.artistTrackHistory[track.artistId]) State.artistTrackHistory[track.artistId] = [];
+      if (!State.artistTrackHistory[track.artistId].includes(track.id)) {
+        State.artistTrackHistory[track.artistId].push(track.id);
+      }
     }
 
     await playTrack(track);
@@ -1250,7 +1262,19 @@ async function fillQueue() {
         if (artist) track = await SpotifyAPI.getRandomTrack(artist.id, filters, blacklistSet, State.historyIds, State.onlyNew, filters.noRepeat !== false ? State.artistTrackHistory : {}, filters.artistRepeatLimit ?? 3);
       }
     } catch {}
-    if (track && !State.queue.find(q => q.id === track.id)) { State.queue.push(track); renderQueue(); }
+    if (track && !State.queue.find(q => q.id === track.id)) {
+      State.queue.push(track);
+      // WICHTIG: Track sofort provisorisch in die Sperre eintragen, damit der nächste
+      // getRandomTrack-Aufruf (für die Queue ODER den nächsten Shuffle) ihn nicht erneut zieht.
+      // Ohne das hinkt die Sperre hinterher und einzelne Tracks werden mehrfach vorgeladen.
+      if (track.artistId && filters.noRepeat !== false) {
+        if (!State.artistTrackHistory[track.artistId]) State.artistTrackHistory[track.artistId] = [];
+        if (!State.artistTrackHistory[track.artistId].includes(track.id)) {
+          State.artistTrackHistory[track.artistId].push(track.id);
+        }
+      }
+      renderQueue();
+    }
     await new Promise(r => setTimeout(r, 1000));
   }
   renderQueue();
@@ -1875,7 +1899,7 @@ function bindAllEvents() {
     if (!dd.classList.contains('hidden')) { dd.classList.add('hidden'); return; }
     dd.innerHTML = '';
     State.lists.forEach(list => {
-      const count = (list.artists?.length || 0) + (list.albums?.length || 0);
+      const count = (list.artists?.length || 0) + (list.albums?.length || 0) + (list.genres?.length || 0);
       const btn = document.createElement('button');
       btn.className = 'list-dropdown-item' + (list.id === State.activeListId ? ' active' : '');
       btn.innerHTML = `<span>${escHtml(list.name)}</span>${count ? `<span class="list-dropdown-count">${count}</span>` : ''}`;
@@ -2132,7 +2156,11 @@ function bindAllEvents() {
   // Stats reset
   document.getElementById('reset-stats-btn').addEventListener('click', () => {
     if (!confirm(I18N.t('confirm_stats_reset'))) return;
-    State.stats = { plays: [], shuffles: 0 }; LS.save(); renderStats();
+    State.stats = { plays: [], shuffles: 0 };
+    localStorage.setItem('as_stats', JSON.stringify(State.stats));
+    LS.save();
+    Sync.saveStats(); // sofort synchen, sonst lädt der nächste Start die alten Stats vom Server zurück
+    renderStats();
     showToast(I18N.t('toast_stats_reset'), 'info');
   });
 
@@ -2208,6 +2236,39 @@ function bindAllEvents() {
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  {
+    version: '1.5.1',
+    date: '2026-08-19',
+    label: { de: 'Shuffle-Fairness & Genre zurück', en: 'Shuffle Fairness & Genre Back' },
+    added: {
+      de: [
+        'Genre-Shuffle wieder aktiviert — die Spotify-Suche funktioniert mit dem seit Feb 2026 gültigen Limit (max. 10) wieder; der "Invalid limit"-Fehler kam nur vom zu hohen alten Limit, nicht von einer Sperre',
+      ],
+      en: [
+        'Genre shuffle re-enabled — Spotify search works again with the limit valid since Feb 2026 (max. 10); the "Invalid limit" error was only caused by the old too-high limit, not by a restriction',
+      ],
+    },
+    fixed: {
+      de: [
+        'Shuffle-Fairness — einzelne Songs kamen deutlich öfter als andere. Ursache: vorgeladene Queue-Tracks landeten erst beim Abspielen in der Wiederholungssperre, wodurch dieselben Tracks mehrfach gezogen werden konnten. Jetzt wird jeder gewählte Track sofort gesperrt',
+        'Track-Auswahl gleichverteilt — alle Tracks aller Alben werden zusammen betrachtet statt erst ein Album, dann ein Track (verhinderte Übergewichtung von Singles/kurzen Alben)',
+        'Stats zurücksetzen — leere Statistik wird jetzt sofort zum Sync-Server geschrieben; vorher kamen die alten Stats beim nächsten Start zurück',
+      ],
+      en: [
+        'Shuffle fairness — individual songs came up far more often than others. Cause: pre-loaded queue tracks only entered the repeat lock when played, so the same tracks could be drawn multiple times. Every chosen track is now locked immediately',
+        'Even track selection — all tracks from all albums are pooled together instead of picking an album first, then a track (prevented over-weighting of singles/short albums)',
+        'Reset stats — the empty statistic is now written to the sync server immediately; previously the old stats returned on next start',
+      ],
+    },
+    changed: {
+      de: [
+        'market-Parameter — nutzt jetzt fest den Ländercode DE, da Spotify das country-Feld aus /me entfernt hat (Feb 2026)',
+      ],
+      en: [
+        'market parameter — now uses fixed country code DE since Spotify removed the country field from /me (Feb 2026)',
+      ],
+    },
+  },
   {
     version: '1.5.0',
     date: '2026-06-19',

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
+
+---
+
 ## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
 
 ### Added
@@ -173,6 +188,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
+
+---
+
 ## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
 
 ### Added
@@ -328,6 +358,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each artist and album has equal chance of being picked (1 entry each in pool)
 - Artists with more albums naturally provide more variety when selected
 - Smart Shuffle still applies — artists not played recently get higher weight
+
+---
+
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
 
 ---
 
@@ -505,6 +550,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
+
+---
+
 ## [1.5.0] — 2026-06-19 — Compact Menus & API Fixes
 
 ### Added
@@ -655,6 +715,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Artist grid switched from 3 to 2 columns — larger images, more breathing room
+
+---
+
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
 
 ---
 
@@ -810,6 +885,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Artist cards no longer shrink with many artists — fixed size with scrollbar
 - Year filters were always active even when empty
+
+---
+
+## [1.5.1] — 2026-08-19 — Shuffle Fairness & Genre Back
+
+### Added
+- **Genre shuffle re-enabled** — the Spotify search endpoint works again once the `limit` parameter respects the maximum of 10 that has applied since the February 2026 API changes. The earlier HTTP 400 `"Invalid limit"` error was caused solely by the old limit values (50/20), not by a catalog-access restriction. The genre search field, genre-based shuffling, the pool entry and the list counter are all back.
+
+### Fixed
+- **Shuffle fairness (main fix)** — individual songs were coming up far more often than others (e.g. one track 24×, others 1–2×). Root cause: `fillQueue` pre-loads tracks, but those tracks only entered the per-artist repeat lock (`artistTrackHistory`) when actually *played* — so the lock lagged behind and the same tracks could be drawn repeatedly across thousands of plays. Now every chosen track is added to the lock **immediately**, both on direct shuffle and when pre-filling the queue.
+- **Even track selection** — `getRandomTrack` now pools all tracks from all candidate albums and picks uniformly, instead of picking an album first and then a track. The old approach over-weighted singles and short albums (a track on a single had a 100% chance once that single was picked, vs. 1/15 on a 15-track album).
+- **Reset stats** — the "Reset stats" button now writes the emptied statistics to the sync server immediately. Previously the reset only cleared local state, so the old stats were reloaded from the server on the next app start.
+
+### Changed
+- **`market` parameter** — now uses a fixed `DE` country code, because Spotify removed the `country` field from the `/me` response in February 2026 (the previous code read `me.country`, which no longer exists).
 
 ---
 

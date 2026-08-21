@@ -1,8 +1,8 @@
 # 🎲 Music Shuffle
 
-> Shuffle through your favorite Spotify artists — no algorithm, just your picks.
+> Shuffle through your favorite Spotify artists and genres — no algorithm, just your picks.
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Vanilla JS](https://img.shields.io/badge/Built%20with-Vanilla%20JS-yellow)
 ![Spotify API](https://img.shields.io/badge/Spotify-Web%20API%20%2B%20SDK-1DB954)
@@ -37,7 +37,8 @@
 ### 📋 List Management
 - Multiple named lists ("Metal Evening", "Gym Rotation", etc.)
 - Artist search with **multi-select**
-- **Combo lists** — mix artists and albums in one list
+- **Genre lists** — shuffle by genre
+- **Combo lists** — mix artists, albums and genres in one list
 - **Duplicate** and **merge** lists
 - **Import / Export** lists as JSON
 - **Cross-device sync** via optional self-hosted sync server
